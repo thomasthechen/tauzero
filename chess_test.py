@@ -45,6 +45,7 @@ def main():
             playermove = chess.Move.from_uci(input_uci)
             if playermove in board.legal_moves:
                 board.push(playermove)
+        # generate move for ai
         else:
             aimove = random.choice([move for move in board.legal_moves])
             board.push(aimove)
