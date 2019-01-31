@@ -1,2 +1,2 @@
 # chessai
-Python chess AI bot. 
+Python chess AI bot. kappa
