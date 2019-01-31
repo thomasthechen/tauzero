@@ -12,6 +12,7 @@ By default, moves are notated with UCI.
 '''
 
 import chess
+import random
 
 def main():
 
@@ -26,13 +27,28 @@ def main():
             print('White\'s Turn')
         else:
             print('Black\'s Turn')
+        print('\n')
+        
         # display board
         print(board)
+        print('\n')
+        
         # display possible moves
         print('Possible moves: ', end = '')
         for move in board.legal_moves:
-            print(board.san(move) + ' ', end  = '')
-        break
+            print(move.uci() + ' ', end  = '')
+        print('\n')
+        
+        # read move if human player
+        if board.turn:
+            input_uci = input('What move would you like to play?\n')
+            playermove = chess.Move.from_uci(input_uci)
+            if playermove in board.legal_moves:
+                board.push(playermove)
+        else:
+            aimove = random.choice([move for move in board.legal_moves])
+            board.push(aimove)
+
 
 # run the main function
 if __name__ == '__main__':
