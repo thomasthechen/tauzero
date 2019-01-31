@@ -49,7 +49,6 @@ def main():
             aimove = random.choice([move for move in board.legal_moves])
             board.push(aimove)
 
-
 # run the main function
 if __name__ == '__main__':
     main()
