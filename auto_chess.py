@@ -65,7 +65,7 @@ def main():
     whitescore = 0.0
     blackscore = 0.0
 
-    for i in range(100):
+    for i in range(1000):
         print(f'Game {i + 1}: ', end = '')
         result = play_game(fen)
         if result == '1-0':
