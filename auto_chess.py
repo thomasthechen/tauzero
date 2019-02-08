@@ -44,7 +44,7 @@ def play_game(fen):
     print(board)
     print('')
 
-    print result
+    # print result
     if board.is_checkmate():
         print(f'Game over. {"Black" if board.turn else "White"} wins.\n')
     elif board.is_stalemate():
