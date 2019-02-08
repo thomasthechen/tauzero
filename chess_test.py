@@ -22,7 +22,9 @@ def main():
     board = chess.Board(fen)
     
     while not board.is_game_over():
+        break
         # display whose turn it is
+        print('\n')
         if board.turn:
             print('White\'s Turn')
         else:
@@ -49,6 +51,8 @@ def main():
         else:
             aimove = random.choice([move for move in board.legal_moves])
             board.push(aimove)
+
+    print(f'Game over. {"Black" if board.turn else "White"} wins.')
 
 # run the main function
 if __name__ == '__main__':
