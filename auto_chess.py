@@ -22,39 +22,39 @@ def play_game(fen):
     
     while not board.is_game_over():
         # display whose turn it is
-        if board.turn:
-            print('White\'s Turn\n')
-        else:
-            print('Black\'s Turn\n')
+        # if board.turn:
+        #     print('White\'s Turn\n')
+        # else:
+        #     print('Black\'s Turn\n')
         
         # display board
-        print(board)
-        print('')
+        # print(board)
+        # print('')
         
         # display possible moves
-        print('Possible moves:', end = ' ')
-        for move in board.legal_moves:
-            print(move.uci(), end  = ' ')
-        print('\n')
+        # print('Possible moves:', end = ' ')
+        # for move in board.legal_moves:
+        #     print(move.uci(), end  = ' ')
+        # print('\n')
         
         aimove = random.choice([move for move in board.legal_moves])
         board.push(aimove)
 
     # print final board
-    print(board)
-    print('')
+    # print(board)
+    # print('')
 
     # print result
     if board.is_checkmate():
-        print(f'Game over. {"Black" if board.turn else "White"} wins.\n')
+        print(f'{"Black" if board.turn else "White"} wins.')
     elif board.is_stalemate():
-        print('Game over. Stalemate.\n')
+        print('Draw. Stalemate.')
     elif board.is_insufficient_material():
-        print('Game over. Insufficient material.\n')
+        print('Draw. Insufficient material.')
     elif board.is_fivefold_repetition():
-        print('Game over. Fivefold repetition.\n')
+        print('Draw. Fivefold repetition.')
     elif board.is_seventyfive_moves():
-        print('Game over. Seventy-five moves.\n')
+        print('Draw. Seventy-five moves.')
 
     return board.result()
 
@@ -65,9 +65,9 @@ def main():
     whitescore = 0.0
     blackscore = 0.0
 
-    for _ in range(100):
+    for i in range(100):
+        print(f'Game {i + 1}: ', end = '')
         result = play_game(fen)
-        print(result)
         if result == '1-0':
             whitescore += 1.0
         elif result == '0-1':

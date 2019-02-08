@@ -22,7 +22,6 @@ def main():
     board = chess.Board(fen)
     
     while not board.is_game_over():
-        break
         # display whose turn it is
         print('\n')
         if board.turn:
