@@ -12,7 +12,6 @@ By default, moves are notated with UCI.
 '''
 
 import chess
-import chess.svg
 import random
 
 def play_game(fen):
