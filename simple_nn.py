@@ -2,11 +2,13 @@ import tensorflow as tf
 import numpy as np
 
 lr = 0.1  # learning rate
+batch_size = 20
 
-n_input = 69
+n_input = 69  # 64 spots + active color + castling + en passant + halfmoves + fullmoves
 n_hidden_1 = 120
 n_hidden_2 = 60
-n_output = 1
+n_value = 1
+n_policy = 1
 
 def nn(X):
 
@@ -20,12 +22,19 @@ def nn(X):
         b_h2 = bias_variable([n_hidden_2])
         hidden_2 = tf.nn.relu(tf.add(tf.matmul(hidden_1, W_h2), b_h2))
 
-    with tf.name_scope('Output'):
-        W_o = weight_variable([n_hidden_2, n_output])
-        b_o = bias_variable([n_output])
-        output = tf.nn.relu(tf.add(tf.matmul(hidden_2, W_o), b_o))
+    # value output
+    with tf.name_scope('Value'):
+        W_v = weight_variable([n_hidden_2, n_value])
+        b_v = bias_variable([n_value])
+        value = tf.nn.relu(tf.add(tf.matmul(hidden_2, W_v), b_v))
 
-    return output
+    # policy output
+    with tf.name_scope('Policy'):
+        W_p = weight_variable([n_hidden_2, n_policy])
+        b_p = bias_variable([n_policy])
+        policy = tf.nn.relu(tf.add(tf.matmul(hidden_2, W_p), b_p))
+
+    return value, policy
 
 def weight_variable(shape):
     """weight_variable generates a weight variable of a given shape."""
@@ -40,7 +49,6 @@ def bias_variable(shape):
 def main():
 
     X = tf.placeholder("float", [None, n_input])
-    Y = tf.placeholder("float", [None, n_output])
 
     print('1')
 
