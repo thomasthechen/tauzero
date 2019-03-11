@@ -8,8 +8,22 @@ def convertfen(fen):
 
     # board states using ascii representations of piece characters
     # A1 = 0 ... H8 = 63
-    board1d = np.zeros([1, 64])
+    board1d = np.zeros([64])
     board2d = np.zeros([8, 8])
+    # bitboard representation
+    # 0 = white pawn
+    # 1 = black pawn
+    # 2 = white rook
+    # 3 = black rook
+    # 4 = white knight
+    # 5 = black knight
+    # 6 = white bishop
+    # 7 = black bishop
+    # 8 = white qieen
+    # 9 = black qieen
+    # 10 = white king
+    # 11 = black king
+    bitboard = np.zeros([12, 8, 8])
     # white = 0, black = 1
     active = -1
     # castle availability
