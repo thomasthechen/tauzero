@@ -44,7 +44,8 @@ def main():
             print(move.uci() + ' ', end  = '')
         print('\n')
         # ai.evaluate_board(board)
-        # read move if human player
+        # ai.minimax(board)
+        # read move if human playerd
         if board.turn:
             input_uci = input('What move would you like to play?\n')
             playermove = chess.Move.from_uci(input_uci)
@@ -54,7 +55,10 @@ def main():
         else:
             # add in minimax decision point
             # give minimax an array of legal moves and the current board state
-            aimove = random.choice([move for move in board.legal_moves])
+            possible_moves = ai.minimax(board)
+            print('BEST AI MOVES', possible_moves)
+            aimove = random.choice(possible_moves)[0]
+            print('AI CHOOSES', aimove)
             board.push(aimove)
 
     print(f'Game over. {"Black" if board.turn else "White"} wins.')

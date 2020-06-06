@@ -19,7 +19,7 @@ class MiniMaxAgent:
         '''
         self.alpha = 0
         self.beta = 10000
-        self.maxDepth = 5
+        self.maxDepth = 3
     
     # Function takes in board state as a chess.Board object, which you can get the list of valid moves from, append to, etc; Returns evaluation of that board state using Minimax
     def evaluate_max(self, board, currentDepth):
@@ -77,9 +77,22 @@ class MiniMaxAgent:
                 else:
                     col += int(square)
         # should really be dependent on who we're evaluating for
-        print(fen[0], evaluation)
+        # print(fen[0], evaluation)
         return evaluation
-        
+
+    # Function: takes in board state, returns top 2 moves    
+    def minimax(self, board):
+        move_evaluations = []
+        for move in board.legal_moves:
+            board.push(move)
+            evaluation = self.evaluate_min(board, 1)
+            move_evaluations.append((move, evaluation))
+            board.pop()
+        move_evaluations.sort(key = lambda x: x[1]) 
+        # print(move_evaluations)
+
+        return move_evaluations[0:2]
+
 
 # run the main function
 if __name__ == '__main__':
