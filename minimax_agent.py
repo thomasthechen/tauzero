@@ -18,6 +18,7 @@ class MiniMaxAgent:
         maxDepth: maximum search depth
         '''
         self.maxDepth = 5
+        self.maxBreadth = 5
 
 
     # Function takes in board state as a chess.Board object, which you can get the list of valid moves from, append to, etc; Returns evaluation of that board state using Minimax
@@ -25,8 +26,12 @@ class MiniMaxAgent:
         # first call begins with a depth of 0
         if currentDepth == self.maxDepth:
             # here we actually need to evaluate the board state using predefined heuristics
-            return self.evaluate_board(board)  
+            return self.evaluate_board(board)
+        branching = 0
+        # TODO: we should iterate through these in an order so that the most promising ones are explored first. For this, we need a better move iterator than the default one
         for move in board.legal_moves:
+            if branching > self.maxBreadth: break
+            branching += 1
             board.push(move)
             # search for best route given negative node optimization
             alpha = max(self.evaluate_min(board, currentDepth + 1, alpha=alpha, beta=beta), alpha)
@@ -46,8 +51,10 @@ class MiniMaxAgent:
         if currentDepth == self.maxDepth:
             # here we actually need to evaluate the board state using predefined heuristics
             return self.evaluate_board(board)
-        
+        branching = 0
         for move in board.legal_moves:
+            if branching > self.maxBreadth: break
+            branching += 1
             board.push(move)
             # search for best route given positive node optimization
             beta = min(self.evaluate_max(board, currentDepth + 1, alpha=alpha, beta=beta), beta)
