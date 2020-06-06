@@ -13,13 +13,17 @@ By default, moves are notated with UCI.
 
 import chess
 import random
+from minimax_agent import MiniMaxAgent
 
 def main():
-
+    # Initialize minimax agent; minimax agent has function eval(state) that takes in board state and outputs move
     # initialize board in standard starting position
     # STARTING_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
     fen = chess.STARTING_FEN
     board = chess.Board(fen)
+
+    ai = MiniMaxAgent()
+    ai.evaluate_board(board)
     
     while not board.is_game_over():
         # display whose turn it is
@@ -39,7 +43,7 @@ def main():
         for move in board.legal_moves:
             print(move.uci() + ' ', end  = '')
         print('\n')
-        
+        # ai.evaluate_board(board)
         # read move if human player
         if board.turn:
             input_uci = input('What move would you like to play?\n')
@@ -48,6 +52,8 @@ def main():
                 board.push(playermove)
         # generate move for ai
         else:
+            # add in minimax decision point
+            # give minimax an array of legal moves and the current board state
             aimove = random.choice([move for move in board.legal_moves])
             board.push(aimove)
 
