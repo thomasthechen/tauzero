@@ -1,4 +1,4 @@
-
+import numpy as np
 import chess
 import random
 
@@ -12,36 +12,50 @@ class MiniMaxAgent:
     def __init__(self):
         '''
         Fields:
-        alpha: the maximum lower bound (the lowest score you are willing to accept)
-        beta: the minimum upper bound (the highest score your opponent is willing to accept)
+        alpha: the maximum lower bound (the largest score guaranteed to the maximizing player)
+        beta: the minimum upper bound (the lowest score guaranteed to the minimizing player)
         maxDepth: maximum search depth
         '''
-        self.alpha = 0
-        self.beta = 10000
         self.maxDepth = 5
     
     # Function takes in board state as a chess.Board object, which you can get the list of valid moves from, append to, etc; Returns evaluation of that board state using Minimax
-    def evaluate_max(self, board, currentDepth):
-        if currentDepth > self.maxDepth:
+    def evaluate_max(self, board, alpha=-np.inf, beta=np.inf, currentDepth):
+        # first call begins with a depth of 0
+        if currentDepth == self.maxDepth:
             # here we actually need to evaluate the board state using predefined heuristics
-            return self.evaluate_board(board)
-        maxVal = -10000
+            return self.evaluate_board(board)  
         for move in board.legal_moves:
             board.push(move)
-            maxVal = max(self.evaluate_min(board, currentDepth + 1), maxVal)
+            # search for best route given negative node optimization
+            alpha = max(self.evaluate_min(board, alpha=alpha, beta=beta, currentDepth + 1), alpha)
             board.pop()
+
+            # stop pruning if we know that minimizer is guaranteed
+            # a better objective score elsewhere
+            if beta < alpha:
+                break
+
         return maxVal
+
     # Function corresponding to above function with the same idea, but maximizing according to opponent's incentives.
-    def evaluate_min(self, board, currentDepth):
-        if currentDepth >= self.maxDepth:
+    def evaluate_min(self, board, alpha=-np.inf, beta=np.inf, currentDepth):
+        # first call begins with a depth of 0
+        if currentDepth == self.maxDepth:
             # here we actually need to evaluate the board state using predefined heuristics
             return self.evaluate_board(board)
-        minVal = 10000
+        
         for move in board.legal_moves:
             board.push(move)
-            minVal = min(self.evaluate_max(board, currentDepth + 1), minVal)
+            # search for best route given positive node optimization
+            beta = min(self.evaluate_max(board, alpha=alpha, beta=beta, currentDepth + 1), beta)
             board.pop()
-        return minVal 
+
+            # stop searching if we know maximizer is guaranteed a better
+            # objective score elsewhere
+            if  beta < alpha:
+                break
+
+        return beta 
     # Function for evaluating board state using heuristics
     def evaluate_board(self, board):
         # TODO
