@@ -56,9 +56,9 @@ def main():
             # add in minimax decision point
             # give minimax an array of legal moves and the current board state
             possible_moves = ai.minimax(board)
-            print('BEST AI MOVES', possible_moves)
+            print('\nBEST AI MOVES', possible_moves)
             aimove = random.choice(possible_moves)[0]
-            print('AI CHOOSES', aimove)
+            print('\nAI CHOOSES', aimove)
             board.push(aimove)
 
     print(f'Game over. {"Black" if board.turn else "White"} wins.')
