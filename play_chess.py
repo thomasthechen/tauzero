@@ -14,8 +14,20 @@ By default, moves are notated with UCI.
 import chess
 import random
 from minimax_agent import MiniMaxAgent
+from value_approximator import Net
+import torch 
 
 def main():
+    value_approx = Net()
+    value_approx.load_state_dict(torch.load('./sample_model.pth', map_location=torch.device('cpu')))
+    value_approx.eval()
+    
+    # Print model's state_dict
+    print("Model's state_dict:")
+    for param_tensor in value_approx.state_dict():
+        print(param_tensor, "\t", value_approx.state_dict()[param_tensor].size())
+    
+    
     # Initialize minimax agent; minimax agent has function eval(state) that takes in board state and outputs move
     # initialize board in standard starting position
     # STARTING_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
