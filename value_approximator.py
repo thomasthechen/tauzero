@@ -1,3 +1,6 @@
+'''
+@author George Hotz
+'''
 import numpy as np 
 import torch
 import torch.nn as nn
@@ -10,7 +13,7 @@ class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
         # in: 8 by 8 by 5
-        self.a1 = nn.Conv2d(5, 16, kernel_size=3, padding=1)
+        self.a1 = nn.Conv2d(13, 16, kernel_size=3, padding=1)
         self.a2 = nn.Conv2d(16, 16, kernel_size=3, padding=1)
         self.a3 = nn.Conv2d(16,32, kernel_size=3, stride=2)
 
@@ -28,23 +31,23 @@ class Net(nn.Module):
 
         self.last = nn.Linear(128, 1)
 
-def forward(self, x):
-    x = F.relu(self.a1(x))
-    x = F.relu(self.a2(x))
-    x = F.relu(self.a3(x))
+    def forward(self, x):
+        x = F.relu(self.a1(x))
+        x = F.relu(self.a2(x))
+        x = F.relu(self.a3(x))
 
-    x = F.relu(self.b1(x))
-    x = F.relu(self.b2(x))
-    x = F.relu(self.b3(x))
+        x = F.relu(self.b1(x))
+        x = F.relu(self.b2(x))
+        x = F.relu(self.b3(x))
 
-    x = F.relu(self.c1(x))
-    x = F.relu(self.c2(x))
-    x = F.relu(self.c3(x))
+        x = F.relu(self.c1(x))
+        x = F.relu(self.c2(x))
+        x = F.relu(self.c3(x))
 
-    x = F.relu(self.d1(x))
-    x = F.relu(self.d2(x))
-    x = F.relu(self.d3(x))
+        x = F.relu(self.d1(x))
+        x = F.relu(self.d2(x))
+        x = F.relu(self.d3(x))
 
-    x = x.view(-1, 128)
-    x = self.last(x)
-    return F.tanh(x)
+        x = x.view(-1, 128)
+        x = self.last(x)
+        return F.tanh(x)
