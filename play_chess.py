@@ -16,10 +16,10 @@ import random
 from minimax_agent import MiniMaxAgent
 from value_approximator import Net
 import torch 
-
+from state import State
 def main():
     value_approx = Net()
-    value_approx.load_state_dict(torch.load('./sample_model.pth', map_location=torch.device('cpu')))
+    value_approx.load_state_dict(torch.load('./trained_models/value.pth', map_location=torch.device('cpu')))
     value_approx.eval()
     
     # Print model's state_dict
@@ -27,9 +27,6 @@ def main():
     for param_tensor in value_approx.state_dict():
         print(param_tensor, "\t", value_approx.state_dict()[param_tensor].size())
     
-    
-    # Initialize minimax agent; minimax agent has function eval(state) that takes in board state and outputs move
-    # initialize board in standard starting position
     # STARTING_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
     fen = chess.STARTING_FEN
     board = chess.Board(fen)
@@ -57,6 +54,9 @@ def main():
         print('\n')
         # ai.evaluate_board(board)
         # ai.minimax(board)
+        in_tensor = torch.tensor(State(board).serialize()).float()
+        in_tensor = in_tensor.reshape(1, 13, 8, 8)
+        print('AI EVAL:', value_approx(in_tensor))
         # read move if human playerd
         if board.turn:
             input_uci = input('What move would you like to play?\n')

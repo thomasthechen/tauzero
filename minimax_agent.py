@@ -1,7 +1,9 @@
 import numpy as np
 import chess
 import random
-
+from value_approximator import Net
+import torch
+from state import State
 class MiniMaxAgent:
     '''
     TODO:
@@ -19,6 +21,10 @@ class MiniMaxAgent:
         '''
         self.maxDepth = 5
         self.maxBreadth = 5
+        self.value_approx = Net()
+        self.value_approx.load_state_dict(torch.load('./trained_models/value.pth', map_location=torch.device('cpu')))
+        self.value_approx.eval()
+    
 
 
     # Function takes in board state as a chess.Board object, which you can get the list of valid moves from, append to, etc; Returns evaluation of that board state using Minimax
@@ -101,9 +107,12 @@ class MiniMaxAgent:
                     evaluation += pieceToValue[square] * self.centerFunction(row, col)
                 else:
                     col += int(square)
-        # should really be dependent on who we're evaluating for
-        # print(fen[0], evaluation)
-        return -evaluation
+
+        # return -evaluation
+        # NN evaluation
+        in_tensor = torch.tensor(State(board).serialize()).float()
+        in_tensor = in_tensor.reshape(1, 13, 8, 8)
+        return self.value_approx(in_tensor).item()
 
     # Function: takes in board state, returns top 2 moves    
     def minimax(self, board):

@@ -45,7 +45,6 @@ if __name__ == "__main__":
       data, target = data.to(device), target.to(device)
       data = data.float()
       target = target.float()
-
       #print(data.shape, target.shape)
       optimizer.zero_grad()
       output = model(data)
