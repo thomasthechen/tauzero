@@ -22,7 +22,7 @@ class StateNode():
 
 
 class MonteCarloAgent():
-    def __init__(self, board_fen=chess.STARTING_FEN, black = True, c = 1.0):
+    def __init__(self, board_fen=chess.STARTING_FEN, black = False, c = 1.0):
         '''
         We take the current game state which is parameterized by its FEN string. 
         self.board = the current chess.Board object which we'll use to handle game logic
@@ -76,7 +76,7 @@ class MonteCarloAgent():
             #TODO: handle duplicate board states in the game state dict
 
             # pop from the board
-            self.board.pop(move)
+            self.board.pop()
 
     def compute_ucb1(self, node):
         '''
@@ -104,7 +104,7 @@ class MonteCarloAgent():
 
         cur_sibling = None
         while prev_sibling.nextSibling is not None:
-            prev_sibling = nextSibling 
+            prev_sibling = prev_sibling.nextSibling 
             ucb = self.compute_ucb1(prev_sibling)
             if ucb > cur_max:
                 ties = [prev_sibling]
@@ -132,7 +132,7 @@ class MonteCarloAgent():
 
         return 0.5
 
-    def rollout(self, num_iterations = 4000):
+    def rollout(self, num_iterations = 300):
         '''
         This method performs a rollout on the current game state. It will select from the child nodes 
         a node with the highest UCB1 value, breaking ties randomly. It will then sample states according to some pre-specified policy
@@ -142,7 +142,7 @@ class MonteCarloAgent():
 
         for i in range(num_iterations):
             node = self.select_node()
-            win_update = random_rollout_policy(node.board_fen)
+            win_update = self.random_rollout_policy(node.board_fen)
 
             # update the local number of visits for visited and root node
             node.n += 1
@@ -152,3 +152,32 @@ class MonteCarloAgent():
         
         # return a node with the highest UCB1 value
         return self.select_node().move
+
+def print_node(node, agent, board=False):
+    if board:
+        print()
+        print('*****BOARD*****')
+        print(chess.Board(node.board_fen))
+        print('***************')
+        print()
+
+    movestr = str(node.move)
+    print('visit_count: %i win_count: %i ucb1: %f move: %s' % (node.n, node.w, agent.compute_ucb1(node), movestr))
+
+def print_all_sibs(node, agent, board=False):
+    tmp = node
+    while tmp is not None:
+        print_node(tmp, agent, board=board)
+        tmp = tmp.nextSibling
+
+
+if __name__ == '__main__':
+    x = MonteCarloAgent()
+    t = x.cur_node
+    x.generate_possible_children()
+
+    print_node(x.select_node(), x)
+
+    print(x.rollout())
+    
+    print_all_sibs(t.firstChild, x)    
