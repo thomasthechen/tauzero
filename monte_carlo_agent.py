@@ -123,7 +123,8 @@ class MonteCarloAgent():
             local_board.push(random.choice(list(local_board.legal_moves)))
             if local_board.is_checkmate():
                 # XOR: if white's turn and black, or if black's turn and white, we lost
-                if local_board.turn ^ (not self.black):
+
+                if (local_board.turn and self.black) or (not local_board.turn and not self.black): 
                     return 0
                 
                 # otherwise we won
