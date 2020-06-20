@@ -19,8 +19,8 @@ class MiniMaxAgent:
         beta: the minimum upper bound (the lowest score guaranteed to the minimizing player)
         maxDepth: maximum search depth
         '''
-        self.maxDepth = 5
-        self.maxBreadth = 5
+        self.maxDepth = 4 # note depth has to be an even number
+        self.maxBreadth = 100
         self.value_approx = Net()
         self.value_approx.load_state_dict(torch.load('./trained_models/value.pth', map_location=torch.device('cpu')))
         self.value_approx.eval()
@@ -29,6 +29,8 @@ class MiniMaxAgent:
 
     # Function takes in board state as a chess.Board object, which you can get the list of valid moves from, append to, etc; Returns evaluation of that board state using Minimax
     def evaluate_max(self, board, currentDepth, alpha=-np.inf, beta=np.inf):
+        if self.evaluate_board_heuristic(board) > beta:
+            return self.evaluate_board_heuristic(board) 
         # first call begins with a depth of 0
         if currentDepth == self.maxDepth:
             # here we actually need to evaluate the board state using predefined heuristics
@@ -53,6 +55,8 @@ class MiniMaxAgent:
 
     # Function corresponding to above function with the same idea, but maximizing according to opponent's incentives.
     def evaluate_min(self, board, currentDepth, alpha=-np.inf, beta=np.inf):
+        if (self.evaluate_board_heuristic(board) < alpha):
+            return self.evaluate_board_heuristic(board)
         # first call begins with a depth of 0
         if currentDepth == self.maxDepth:
             # here we actually need to evaluate the board state using predefined heuristics
@@ -78,9 +82,7 @@ class MiniMaxAgent:
     def centerFunction(self, row, col):
         return 1 - ((row - 3.5) * (row - 3.5) + (col - 3.5) + (col - 3.5))/250
 
-
-    # Function for evaluating board state using heuristics
-    def evaluate_board(self, board):
+    def evaluate_board_heuristic(self, board):
         evaluation = 0
         pieceToValue = {
             'r' : 5,
@@ -104,26 +106,29 @@ class MiniMaxAgent:
             col = 0
             for square in pieces[row]:
                 if square in pieceToValue:
-                    evaluation += pieceToValue[square] * self.centerFunction(row, col)
+                    evaluation += pieceToValue[square]
                 else:
                     col += int(square)
 
-        # return -evaluation
-        # NN evaluation
+        return -0.2 * evaluation
+
+    # Function for evaluating board state using heuristics
+    def evaluate_board(self, board):
         in_tensor = torch.tensor(State(board).serialize()).float()
         in_tensor = in_tensor.reshape(1, 13, 8, 8)
-        return self.value_approx(in_tensor).item()
+        # print(self.evaluate_board_heuristic(board))
+        return self.value_approx(in_tensor).item() + self.evaluate_board_heuristic(board)
 
     # Function: takes in board state, returns top 2 moves    
     def minimax(self, board):
         move_evaluations = []
         for move in board.legal_moves:
             board.push(move)
-            evaluation = self.evaluate_min(board, 1)
+            evaluation = self.evaluate_max(board, 1)
             move_evaluations.append((move, evaluation))
             board.pop()
         move_evaluations.sort(key = lambda x: x[1]) 
-        print(move_evaluations)
+        print(move_evaluations[0:7])
 
         return move_evaluations[0:1]
 
@@ -134,4 +139,11 @@ if __name__ == '__main__':
     fen = chess.STARTING_FEN
     board = chess.Board(fen)
     print(agent.evaluate_board(board))
+
+    for i in range (10):
+        for move in board.legal_moves:
+            board.push(move)
+            print(board)
+            print(agent.evaluate_board(board))
+            break
 

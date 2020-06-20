@@ -15,6 +15,7 @@ import chess
 import random
 import torch 
 import argparse
+import os
 
 from minimax_agent import MiniMaxAgent
 from value_approximator import Net
@@ -59,13 +60,13 @@ def main():
         # display board
         print(board)
         print('\n')
-        
+        ''' 
         # display possible moves
         print('Possible moves: ', end = '')
         for move in board.legal_moves:
             print(move.uci() + ' ', end  = '')
         print('\n')
-
+        '''
         if args.agent == 'minimax':
             # ai.evaluate_board(board)
             # ai.minimax(board)
@@ -86,7 +87,7 @@ def main():
             aimove = None
             if args.agent == 'minimax':
                 possible_moves = ai.minimax(board)
-                print('\nBEST AI MOVES', possible_moves)
+                # print('\nBEST AI MOVES', possible_moves)
                 aimove = random.choice(possible_moves)[0]
             
             else:
@@ -99,6 +100,132 @@ def main():
 
     print(f'Game over. {"Black" if board.turn else "White"} wins.')
 
+
+
+# @author George Hotz
+s = State()
+
+value_approx = Net()
+value_approx.load_state_dict(torch.load('./trained_models/value.pth', map_location=torch.device('cpu')))
+value_approx.eval()
+ai = MiniMaxAgent()
+
+
+def to_svg(s):
+  return base64.b64encode(chess.svg.board(board=s.board).encode('utf-8')).decode('utf-8')
+
+from flask import Flask, Response, request
+app = Flask(__name__)
+
+@app.route("/")
+def hello():
+    ret = open("index.html").read()
+    return ret.replace('start', s.board.fen())
+
+
+def computer_move(s):
+    aimove = None
+    # if args.agent == 'minimax':
+    possible_moves = ai.minimax(s.board)
+    # print('\nBEST AI MOVES', possible_moves)
+    aimove = random.choice(possible_moves)[0]
+    s.board.push(aimove)
+
+@app.route("/selfplay")
+def selfplay():
+    s = State()
+
+    ret = '<html><head>'
+    # self play
+    while not s.board.is_game_over():
+        computer_move(s)
+        ret += '<img width=600 height=600 src="data:image/svg+xml;base64,%s"></img><br/>' % to_svg(s)
+        print(s.board.result())
+
+    return ret
+
+
+# move given in algebraic notation
+@app.route("/move")
+def move():
+    if not s.board.is_game_over():
+        move = request.args.get('move',default="")
+        if move is not None and move != "":
+            print("human moves", move)
+            try:
+                s.board.push_san(move)
+                computer_move(s, v)
+            except Exception:
+                traceback.print_exc()
+            response = app.response_class(
+                response=s.board.fen(),
+                status=200
+            )
+            return response
+    else:
+        print("GAME IS OVER")
+        response = app.response_class(
+        response="game over",
+        status=200
+        )
+        return response
+    print("hello ran")
+    return hello()
+
+# moves given as coordinates of piece moved
+@app.route("/move_coordinates")
+def move_coordinates():
+    if not s.board.is_game_over():
+        source = int(request.args.get('from', default=''))
+        target = int(request.args.get('to', default=''))
+        promotion = True if request.args.get('promotion', default='') == 'true' else False
+
+        move = s.board.san(chess.Move(source, target, promotion=chess.QUEEN if promotion else None))
+
+        if move is not None and move != "":
+            print("human moves", move)
+            try:
+                s.board.push_san(move)
+                computer_move(s)
+            except Exception:
+                traceback.print_exc()
+        response = app.response_class(
+        response=s.board.fen(),
+        status=200
+        )
+        return response
+
+    print("GAME IS OVER")
+    response = app.response_class(
+        response="game over",
+        status=200
+    )
+    return response
+
+@app.route("/newgame")
+def newgame():
+    s.board.reset()
+    response = app.response_class(
+        response=s.board.fen(),
+        status=200
+    )
+    return response
+
+
+if __name__ == "__main__":
+    if os.getenv("SELFPLAY") is not None:
+        s = State()
+        while not s.board.is_game_over():
+            computer_move(s)
+            print(s.board)
+            print(s.board.result())
+    else:
+        app.run(debug=True)
+
+
+
+'''
 # run the main function
 if __name__ == '__main__':
     main()
+'''
