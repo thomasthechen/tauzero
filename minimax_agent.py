@@ -22,15 +22,15 @@ class MiniMaxAgent:
         self.maxDepth = 4 # note depth has to be an even number
         self.maxBreadth = 100
         self.value_approx = Net()
-        self.value_approx.load_state_dict(torch.load('./trained_models/value.pth', map_location=torch.device('cpu')))
+        self.value_approx.load_state_dict(torch.load('./trained_models/value_40_6000_4.pth', map_location=torch.device('cpu')))
         self.value_approx.eval()
     
 
 
     # Function takes in board state as a chess.Board object, which you can get the list of valid moves from, append to, etc; Returns evaluation of that board state using Minimax
     def evaluate_max(self, board, currentDepth, alpha=-np.inf, beta=np.inf):
-        if self.evaluate_board_heuristic(board) > beta:
-            return self.evaluate_board_heuristic(board) 
+        if self.evaluate_board(board) > beta:
+            return self.evaluate_board(board) 
         # first call begins with a depth of 0
         if currentDepth == self.maxDepth:
             # here we actually need to evaluate the board state using predefined heuristics
@@ -55,8 +55,8 @@ class MiniMaxAgent:
 
     # Function corresponding to above function with the same idea, but maximizing according to opponent's incentives.
     def evaluate_min(self, board, currentDepth, alpha=-np.inf, beta=np.inf):
-        if (self.evaluate_board_heuristic(board) < alpha):
-            return self.evaluate_board_heuristic(board)
+        if (self.evaluate_board(board) < alpha):
+            return self.evaluate_board(board)
         # first call begins with a depth of 0
         if currentDepth == self.maxDepth:
             # here we actually need to evaluate the board state using predefined heuristics
@@ -110,7 +110,7 @@ class MiniMaxAgent:
                 else:
                     col += int(square)
 
-        return -0.2 * evaluation
+        return -0.02 * evaluation
 
     # Function for evaluating board state using heuristics
     def evaluate_board(self, board):
@@ -128,7 +128,7 @@ class MiniMaxAgent:
             move_evaluations.append((move, evaluation))
             board.pop()
         move_evaluations.sort(key = lambda x: x[1]) 
-        print(move_evaluations[0:7])
+        print(move_evaluations[0:1])
 
         return move_evaluations[0:1]
 

@@ -11,11 +11,17 @@ board.turn returns True for white and False for black
 By default, moves are notated with UCI. 
 '''
 
+'''
+pruning by heuristic is way faster but leads to dumb king moves; pruning by actual eval is hella slow
+'''
+
 import chess
 import random
 import torch 
 import argparse
 import os
+import traceback
+import base64
 
 from minimax_agent import MiniMaxAgent
 from value_approximator import Net
@@ -106,7 +112,7 @@ def main():
 s = State()
 
 value_approx = Net()
-value_approx.load_state_dict(torch.load('./trained_models/value.pth', map_location=torch.device('cpu')))
+value_approx.load_state_dict(torch.load('./trained_models/value_40_6000_4.pth', map_location=torch.device('cpu')))
 value_approx.eval()
 ai = MiniMaxAgent()
 
@@ -154,7 +160,7 @@ def move():
             print("human moves", move)
             try:
                 s.board.push_san(move)
-                computer_move(s, v)
+                computer_move(s)
             except Exception:
                 traceback.print_exc()
             response = app.response_class(
@@ -218,6 +224,9 @@ if __name__ == "__main__":
         while not s.board.is_game_over():
             computer_move(s)
             print(s.board)
+            in_tensor = torch.tensor(State(s.board).serialize()).float()
+            in_tensor = in_tensor.reshape(1, 13, 8, 8)
+            print('\nAI EVAL: ', value_approx(in_tensor).item())
             print(s.board.result())
     else:
         app.run(debug=True)
