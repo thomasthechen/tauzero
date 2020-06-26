@@ -71,7 +71,7 @@ class MiniMaxAgent:
 
         return beta 
 
-    def get_best_move_candidates(self, board, minimizer, num_ret=6):
+    def get_best_move_candidates(self, board, minimizer, num_ret=4):
         evals = []
         for move in board.legal_moves:
             board.push(move)
