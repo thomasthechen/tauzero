@@ -26,7 +26,7 @@ import numpy as np
 
 from minimax_agent import MiniMaxAgent
 from value_approximator import Net
-from monte_carlo_agent import MonteCarloAgent
+# from monte_carlo_agent import MonteCarloAgent
 from state import State
 
 def parse_arguments():
