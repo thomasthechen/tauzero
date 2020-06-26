@@ -22,6 +22,7 @@ import argparse
 import os
 import traceback
 import base64
+import numpy as np
 
 from minimax_agent import MiniMaxAgent
 from value_approximator import Net
@@ -131,10 +132,12 @@ def hello():
 
 def computer_move(s):
     aimove = None
-    # if args.agent == 'minimax':
     possible_moves = ai.minimax(s.board)
-    # print('\nBEST AI MOVES', possible_moves)
-    aimove = random.choice(possible_moves)[0]
+    # probs = [2**(-10000* x[1]) for x in possible_moves]
+    probs = [x[1] for x in possible_moves]
+    moves = [x[0] for x in possible_moves] 
+    probs = probs/np.sum(probs)
+    aimove = np.random.choice(moves, p=probs)
     s.board.push(aimove)
 
 @app.route("/selfplay")

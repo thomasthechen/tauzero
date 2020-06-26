@@ -29,24 +29,19 @@ class MiniMaxAgent:
 
     # Function takes in board state as a chess.Board object, which you can get the list of valid moves from, append to, etc; Returns evaluation of that board state using Minimax
     def evaluate_max(self, board, currentDepth, alpha=-np.inf, beta=np.inf):
-        if self.evaluate_board(board) > beta:
-            return self.evaluate_board(board) 
-        # first call begins with a depth of 0
+        board_eval = self.evaluate_board(board) 
+        if board_eval > beta:
+            return board_eval
         if currentDepth == self.maxDepth:
-            # here we actually need to evaluate the board state using predefined heuristics
-            return self.evaluate_board(board)
+            return board_eval
         branching = 0
-        # TODO: we should iterate through these in an order so that the most promising ones are explored first. For this, we need a better move iterator than the default one
         for move in board.legal_moves:
             if branching > self.maxBreadth: break
             branching += 1
             board.push(move)
-            # search for best route given negative node optimization
             alpha = max(self.evaluate_min(board, currentDepth + 1, alpha=alpha, beta=beta), alpha)
             board.pop()
 
-            # stop pruning if we know that minimizer is guaranteed
-            # a better objective score elsewhere
             if beta < alpha:
                 break
 
@@ -55,32 +50,24 @@ class MiniMaxAgent:
 
     # Function corresponding to above function with the same idea, but maximizing according to opponent's incentives.
     def evaluate_min(self, board, currentDepth, alpha=-np.inf, beta=np.inf):
-        if (self.evaluate_board(board) < alpha):
-            return self.evaluate_board(board)
-        # first call begins with a depth of 0
+        board_eval = self.evaluate_board(board) 
+        if (board_eval < alpha):
+            return board_eval
         if currentDepth == self.maxDepth:
-            # here we actually need to evaluate the board state using predefined heuristics
-            return self.evaluate_board(board)
+            return board_eval
         branching = 0
         for move in board.legal_moves:
             if branching > self.maxBreadth: break
+            
             branching += 1
             board.push(move)
-            # search for best route given positive node optimization
             beta = min(self.evaluate_max(board, currentDepth + 1, alpha=alpha, beta=beta), beta)
             board.pop()
             
-            # stop searching if we know maximizer is guaranteed a better
-            # objective score elsewhere
             if  beta < alpha:
                 break
 
         return beta 
-
-
-    # returns a value from about 0.75 to 1, where central coordinates yield a higher value
-    def centerFunction(self, row, col):
-        return 1 - ((row - 3.5) * (row - 3.5) + (col - 3.5) + (col - 3.5))/250
 
     def evaluate_board_heuristic(self, board):
         evaluation = 0
@@ -110,7 +97,7 @@ class MiniMaxAgent:
                 else:
                     col += int(square)
 
-        return -0.02 * evaluation
+        return -0.04 * evaluation
 
     # Function for evaluating board state using heuristics
     def evaluate_board(self, board):
@@ -128,7 +115,7 @@ class MiniMaxAgent:
             move_evaluations.append((move, evaluation))
             board.pop()
         move_evaluations.sort(key = lambda x: x[1]) 
-        print(move_evaluations[0:1])
+        print(move_evaluations[0:3])
 
         return move_evaluations[0:1]
 
