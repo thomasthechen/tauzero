@@ -1,1 +1,1 @@
-web: gunicorn app:play_chess
+web: gunicorn play_chess:app
