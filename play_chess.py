@@ -222,18 +222,21 @@ def newgame():
 
 
 if __name__ == "__main__":
+    '''
     if os.getenv("SELFPLAY") is not None:
         s = State()
+        print('DEBUG 222')
         while not s.board.is_game_over():
             computer_move(s)
             print(s.board)
             in_tensor = torch.tensor(State(s.board).serialize()).float()
             in_tensor = in_tensor.reshape(1, 13, 8, 8)
             print('\nAI EVAL: ', value_approx(in_tensor).item())
-            print(s.board.result())
+            print(s.board.result())  
     else:
-        print('DEBUG')
-	app.run(debug=True)
+    '''
+    print('DEBUG 111')
+    app.run(debug=True)
 
 
 
