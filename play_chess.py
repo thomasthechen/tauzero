@@ -213,7 +213,7 @@ def move_coordinates():
 
 @app.route("/newgame")
 def newgame():
-    s.board.reset()
+    #s.board.reset()
     response = app.response_class(
         response=s.board.fen(),
         status=200
