@@ -232,7 +232,8 @@ if __name__ == "__main__":
             print('\nAI EVAL: ', value_approx(in_tensor).item())
             print(s.board.result())
     else:
-        app.run(debug=True)
+        print('DEBUG')
+	app.run(debug=True)
 
 
 
