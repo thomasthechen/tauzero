@@ -190,7 +190,7 @@ def move_coordinates():
         promotion = True if request.args.get('promotion', default='') == 'true' else False
 
         move = s.board.san(chess.Move(source, target, promotion=chess.QUEEN if promotion else None))
-
+        print(s.board)
         if move is not None and move != "":
             print("human moves", move)
             try:
@@ -213,7 +213,7 @@ def move_coordinates():
 
 @app.route("/newgame")
 def newgame():
-    #s.board.reset()
+    s.board.reset()
     response = app.response_class(
         response=s.board.fen(),
         status=200
