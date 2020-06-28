@@ -202,6 +202,7 @@ def move_coordinates():
         response=s.board.fen(),
         status=200
         )
+        print(s.board)
         return response
 
     print("GAME IS OVER")
