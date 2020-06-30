@@ -20,6 +20,7 @@ import random
 import torch 
 import argparse
 import os
+import psycopg2
 import traceback
 import base64
 import numpy as np
@@ -34,6 +35,8 @@ from worker import conn
 
 q = Queue(connection=conn)
 
+DATABASE_URL = os.environ.get('DATABASE_URL')
+conn2 = psycopg2.connect(DATABASE_URL, sslmode='require')
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Provide arguments for which agent you want to play')
