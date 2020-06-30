@@ -29,6 +29,12 @@ from value_approximator import Net
 # from monte_carlo_agent import MonteCarloAgent
 from state import State
 
+from rq import Queue
+from worker import conn
+
+q = Queue(connection=conn)
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Provide arguments for which agent you want to play')
     parser.add_argument('--agent', choices=['minimax', 'mcts'], required=True)
@@ -110,7 +116,6 @@ def main():
 
 
 # @author George Hotz
-s = State()
 
 value_approx = Net()
 value_approx.load_state_dict(torch.load('./trained_models/value_40_6000_4.pth', map_location=torch.device('cpu')))
@@ -123,6 +128,8 @@ def to_svg(s):
 
 from flask import Flask, Response, request
 app = Flask(__name__)
+
+s = State()
 
 @app.route("/")
 def hello():
@@ -140,20 +147,6 @@ def computer_move(s):
     aimove = np.random.choice(moves, p=probs)
     s.board.push(aimove)
 
-@app.route("/selfplay")
-def selfplay():
-    s = State()
-
-    ret = '<html><head>'
-    # self play
-    while not s.board.is_game_over():
-        computer_move(s)
-        ret += '<img width=600 height=600 src="data:image/svg+xml;base64,%s"></img><br/>' % to_svg(s)
-        print(s.board.result())
-
-    return ret
-
-
 # move given in algebraic notation
 @app.route("/move")
 def move():
@@ -163,7 +156,8 @@ def move():
             print("human moves", move)
             try:
                 s.board.push_san(move)
-                computer_move(s)
+
+                q.enqueue(computer_move(s), 'http://heroku.com')
             except Exception:
                 traceback.print_exc()
             response = app.response_class(
@@ -223,26 +217,5 @@ def newgame():
 
 
 if __name__ == "__main__":
-    '''
-    if os.getenv("SELFPLAY") is not None:
-        s = State()
-        print('DEBUG 222')
-        while not s.board.is_game_over():
-            computer_move(s)
-            print(s.board)
-            in_tensor = torch.tensor(State(s.board).serialize()).float()
-            in_tensor = in_tensor.reshape(1, 13, 8, 8)
-            print('\nAI EVAL: ', value_approx(in_tensor).item())
-            print(s.board.result())  
-    else:
-    '''
-    print('DEBUG 111')
     app.run(debug=True)
 
-
-
-'''
-# run the main function
-if __name__ == '__main__':
-    main()
-'''
