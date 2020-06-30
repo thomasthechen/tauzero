@@ -189,7 +189,8 @@ def move_coordinates():
             print("human moves", move)
             try:
                 s.board.push_san(move)
-                computer_move(s)
+                q.enqueue(computer_move(s), 'http://heroku.com')
+                # computer_move(s)
             except Exception:
                 traceback.print_exc()
         response = app.response_class(
