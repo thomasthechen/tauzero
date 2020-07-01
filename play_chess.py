@@ -253,18 +253,16 @@ def move_coordinates():
 
 @app.route("/newgame")
 def newgame():
-    meta = db.metadata
-    for table in reversed(meta.sorted_tables):
-        db.session.execute(table.delete())
-    db.session.commit()
 
-    s = State()
-    entry = Entry(s.board.fen())
-    db.session.add(entry)
+    fen = chess.Board.starting_fen
+    bk = Entry.query.update(dict(board=fen))
     db.session.commit()
+    # entry = Entry(s.board.fen())
+    # db.session.add(entry)
+    # db.session.commit()
 
     response = app.response_class(
-        response=s.board.fen(),
+        response=fen,
         status=200
     )
     return response
