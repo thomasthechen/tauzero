@@ -4,12 +4,13 @@ import random
 from value_approximator import Net
 import torch
 from state import State
+import time
+
 class MiniMaxAgent:
     '''
     TODO:
-    1. implement function that evaluates board state using heuristics
-    2. test brute-force search
-    3. add alpha-beta pruning
+    1. implement monte carlo agent
+    2. optimize minimax agent
     '''
 
     def __init__(self):
@@ -24,11 +25,12 @@ class MiniMaxAgent:
         self.value_approx = Net()
         self.value_approx.load_state_dict(torch.load('./trained_models/value_40_6000_4.pth', map_location=torch.device('cpu')))
         self.value_approx.eval()
+        self.maxTime = 20
     
 
 
     # Function takes in board state as a chess.Board object, which you can get the list of valid moves from, append to, etc; Returns evaluation of that board state using Minimax
-    def evaluate_max(self, board, currentDepth, alpha=-np.inf, beta=np.inf):
+    def evaluate_max(self, board, currentDepth, start_time, alpha=-np.inf, beta=np.inf):
         board_eval = self.evaluate_board(board) 
         if board_eval > beta:
             return board_eval
@@ -40,7 +42,7 @@ class MiniMaxAgent:
             if branching > self.maxBreadth: break
             branching += 1
             board.push(move)
-            alpha = max(self.evaluate_min(board, currentDepth + 1, alpha=alpha, beta=beta), alpha)
+            alpha = max(self.evaluate_min(board, currentDepth + 1, start_time, alpha=alpha, beta=beta), alpha)
             board.pop()
 
             if beta < alpha:
@@ -50,9 +52,9 @@ class MiniMaxAgent:
 
 
     # Function corresponding to above function with the same idea, but maximizing according to opponent's incentives.
-    def evaluate_min(self, board, currentDepth, alpha=-np.inf, beta=np.inf):
+    def evaluate_min(self, board, currentDepth, start_time, alpha=-np.inf, beta=np.inf):
         board_eval = self.evaluate_board(board) 
-        if (board_eval < alpha):
+        if (board_eval < alpha or time.time() - start_time > self.maxTime):
             return board_eval
         if currentDepth == self.maxDepth:
             return board_eval
@@ -63,7 +65,7 @@ class MiniMaxAgent:
             
             branching += 1
             board.push(move)
-            beta = min(self.evaluate_max(board, currentDepth + 1, alpha=alpha, beta=beta), beta)
+            beta = min(self.evaluate_max(board, currentDepth + 1, start_time, alpha=alpha, beta=beta), beta)
             board.pop()
             
             if  beta < alpha:
@@ -71,7 +73,7 @@ class MiniMaxAgent:
 
         return beta 
 
-    def get_best_move_candidates(self, board, minimizer, num_ret=3):
+    def get_best_move_candidates(self, board, minimizer, num_ret=4):
         evals = []
         for move in board.legal_moves:
             board.push(move)
@@ -130,12 +132,15 @@ class MiniMaxAgent:
 
     # Function: takes in board state, returns top 2 moves    
     def minimax(self, board):
+
+        start_time = time.time()
+
         move_evaluations = []
-        likely_moves = self.get_best_move_candidates(board, True, 5)
+        likely_moves = self.get_best_move_candidates(board, True)
 
         for move in likely_moves:
             board.push(move)
-            evaluation = self.evaluate_max(board, 1)
+            evaluation = self.evaluate_max(board, 1, start_time)
             move_evaluations.append((move, evaluation))
             board.pop()
         move_evaluations.sort(key = lambda x: x[1]) 
