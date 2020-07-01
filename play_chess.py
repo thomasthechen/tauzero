@@ -35,11 +35,6 @@ from worker import conn
 
 from flask_sqlalchemy import SQLAlchemy
 
-
-
-
-
-
 q = Queue(connection=conn)
 
 # DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -276,7 +271,7 @@ def newgame():
 
 
 if __name__ == "__main__":
-    '''
+    
     meta = db.metadata
     for table in reversed(meta.sorted_tables):
         db.session.execute(table.delete())
@@ -286,7 +281,7 @@ if __name__ == "__main__":
     entry = Entry(s.board.fen())
     db.session.add(entry)
     db.session.commit()
-    '''
+    
     '''
     bk = Entry.query.update(dict(board='ok'))
     db.session.commit()
