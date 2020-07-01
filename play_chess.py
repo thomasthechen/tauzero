@@ -271,12 +271,12 @@ def newgame():
 
 
 if __name__ == "__main__":
-    
+    '''
     meta = db.metadata
     for table in reversed(meta.sorted_tables):
         db.session.execute(table.delete())
     db.session.commit()
-
+    '''
     s = State()
     entry = Entry(s.board.fen())
     db.session.add(entry)
