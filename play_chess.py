@@ -276,12 +276,12 @@ if __name__ == "__main__":
     for table in reversed(meta.sorted_tables):
         db.session.execute(table.delete())
     db.session.commit()
-    '''
+    
     s = State()
     entry = Entry(s.board.fen())
     db.session.add(entry)
     db.session.commit()
-    
+    '''
     '''
     bk = Entry.query.update(dict(board='ok'))
     db.session.commit()
