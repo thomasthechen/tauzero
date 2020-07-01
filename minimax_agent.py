@@ -11,6 +11,7 @@ class MiniMaxAgent:
     TODO:
     1. implement monte carlo agent
     2. optimize minimax agent
+    3. fix redis for heroku app
     '''
 
     def __init__(self):
