@@ -33,10 +33,18 @@ from state import State
 from rq import Queue
 from worker import conn
 
+from flask_sqlalchemy import SQLAlchemy
+
+
+
+
+
+
 q = Queue(connection=conn)
 
-DATABASE_URL = os.environ.get('DATABASE_URL')
-conn2 = psycopg2.connect(DATABASE_URL, sslmode='require')
+# DATABASE_URL = os.environ.get('DATABASE_URL')
+# conn2 = psycopg2.connect(DATABASE_URL, sslmode='require')
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Provide arguments for which agent you want to play')
@@ -120,39 +128,68 @@ def main():
 
 # @author George Hotz
 
-value_approx = Net()
-value_approx.load_state_dict(torch.load('./trained_models/value_40_6000_4.pth', map_location=torch.device('cpu')))
-value_approx.eval()
-ai = MiniMaxAgent()
-
-
 def to_svg(s):
   return base64.b64encode(chess.svg.board(board=s.board).encode('utf-8')).decode('utf-8')
 
 from flask import Flask, Response, request
 app = Flask(__name__)
 
-s = State()
+
+app.config.from_object(os.environ['APP_SETTINGS'])
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+
+class Entry(db.Model):
+    __tablename__ = 'boards'
+
+    id = db.Column(db.Integer, primary_key=True)
+    board = db.Column(db.String())
+
+    def __init__(self, board):
+        self.board = board
+
+    def __repr__(self):
+        return '<id {}>'.format(self.id)
+    
+    def serialize(self):
+        return {
+            'id': self.id, 
+            'board': self.board,
+        }
+ai = MiniMaxAgent()
+# s = State()
 
 @app.route("/")
 def hello():
     ret = open("index.html").read()
-    return ret.replace('start', s.board.fen())
+    fen = Entry.query.first().board
+    print('FENFEN', fen)
+    return ret.replace('start', fen)
 
 
-def computer_move(s):
+def computer_move():
     aimove = None
+    fen = Entry.query.first().board
+    s = State()
+    s.board = chess.Board(fen)
+
     possible_moves = ai.minimax(s.board)
-    # probs = [2**(-10000* x[1]) for x in possible_moves]
     probs = [x[1] for x in possible_moves]
     moves = [x[0] for x in possible_moves] 
     probs = probs/np.sum(probs)
     aimove = np.random.choice(moves, p=probs)
     s.board.push(aimove)
 
+    bk = Entry.query.update(dict(board=s.board.fen()))
+    db.session.commit()
+    
+
+
 # move given in algebraic notation
 @app.route("/move")
 def move():
+    
     if not s.board.is_game_over():
         move = request.args.get('move',default="")
         if move is not None and move != "":
@@ -181,21 +218,30 @@ def move():
 # moves given as coordinates of piece moved
 @app.route("/move_coordinates")
 def move_coordinates():
+
+    fen = Entry.query.first().board
+    s = State()
+    s.board = chess.Board(fen)
+
     if not s.board.is_game_over():
         source = int(request.args.get('from', default=''))
         target = int(request.args.get('to', default=''))
         promotion = True if request.args.get('promotion', default='') == 'true' else False
 
         move = s.board.san(chess.Move(source, target, promotion=chess.QUEEN if promotion else None))
-        print(s.board)
+        # print(s.board)
         if move is not None and move != "":
             print("human moves", move)
             try:
                 s.board.push_san(move)
-                q.enqueue(computer_move(s), 'http://heroku.com')
-                # computer_move(s)
+                bk = Entry.query.update(dict(board=s.board.fen()))
+                db.session.commit()
+                q.enqueue(computer_move(), 'http://heroku.com')
+                # computer_move()
             except Exception:
                 traceback.print_exc()
+        fen = Entry.query.first().board
+        s.board = chess.Board(fen)  
         response = app.response_class(
         response=s.board.fen(),
         status=200
@@ -212,7 +258,16 @@ def move_coordinates():
 
 @app.route("/newgame")
 def newgame():
-    s.board.reset()
+    meta = db.metadata
+    for table in reversed(meta.sorted_tables):
+        db.session.execute(table.delete())
+    db.session.commit()
+
+    s = State()
+    entry = Entry(s.board.fen())
+    db.session.add(entry)
+    db.session.commit()
+
     response = app.response_class(
         response=s.board.fen(),
         status=200
@@ -221,5 +276,23 @@ def newgame():
 
 
 if __name__ == "__main__":
+    '''
+    meta = db.metadata
+    for table in reversed(meta.sorted_tables):
+        db.session.execute(table.delete())
+    db.session.commit()
+
+    s = State()
+    entry = Entry(s.board.fen())
+    db.session.add(entry)
+    db.session.commit()
+    '''
+    '''
+    bk = Entry.query.update(dict(board='ok'))
+    db.session.commit()
+    print('BOARD', Entry.query.all())
+    
+    print('BOARD', Entry.query.first().board)
+    '''
     app.run(debug=True)
 

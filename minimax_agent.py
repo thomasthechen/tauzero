@@ -19,7 +19,7 @@ class MiniMaxAgent:
         beta: the minimum upper bound (the lowest score guaranteed to the minimizing player)
         maxDepth: maximum search depth
         '''
-        self.maxDepth = 2 # note depth has to be an even number
+        self.maxDepth = 4 # note depth has to be an even number
         self.maxBreadth = 100
         self.value_approx = Net()
         self.value_approx.load_state_dict(torch.load('./trained_models/value_40_6000_4.pth', map_location=torch.device('cpu')))
@@ -115,7 +115,7 @@ class MiniMaxAgent:
                 else:
                     col += int(square)
 
-        return -0.04 * evaluation
+        return -0.05 * evaluation
 
     # Function for evaluating board state using heuristics
     def evaluate_board(self, board):
