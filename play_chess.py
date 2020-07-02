@@ -231,7 +231,7 @@ def move_coordinates():
                 s.board.push_san(move)
                 bk = Entry.query.update(dict(board=s.board.fen()))
                 db.session.commit()
-                q.enqueue(computer_move(), 'http://heroku.com')
+                computer_move()
                 # computer_move()
             except Exception:
                 traceback.print_exc()
