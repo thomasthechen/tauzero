@@ -67,12 +67,9 @@ def main():
         print('\n')
 
         if args.agent == 'minimax':
-            # ai.evaluate_board(board)
-            # ai.minimax(board)
             in_tensor = torch.tensor(State(board).serialize()).float()
             in_tensor = in_tensor.reshape(1, 13, 8, 8)
             print('AI EVAL:', value_approx(in_tensor))
-        # read move if human playerd
         if board.turn:
             input_uci = input('What move would you like to play?\n')
             playermove = chess.Move.from_uci(input_uci)
