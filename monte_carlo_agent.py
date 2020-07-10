@@ -102,7 +102,6 @@ class MonteCarloAgent():
         ties = [prev_sibling]
         cur_max = self.compute_ucb1(prev_sibling)
 
-        cur_sibling = None
         while prev_sibling.nextSibling is not None:
             prev_sibling = prev_sibling.nextSibling 
             ucb = self.compute_ucb1(prev_sibling)
@@ -115,6 +114,22 @@ class MonteCarloAgent():
                 continue
         
         return random.choice(ties)
+
+    def get_mcts_policy(self, temp=0.7):
+        cur = self.cur_node.firstChild
+        policy = [(cur.n, cur.move)]
+
+        sum = 0
+        while cur.nextSibling is not None:
+            cur = cur.nextSibling
+            policy.append((cur.n**temp, cur.move))
+            sum += cur.n**temp
+        
+        
+        # policy = [(x[0]/sum, x[1]) for x in policy]
+        
+        return policy
+            
 
     def random_rollout_policy(self, board_fen):
         local_board = chess.Board(board_fen)
@@ -132,6 +147,16 @@ class MonteCarloAgent():
                     return 1
 
         return 0.5
+
+        
+    '''
+    TODO: NN ROLLOUT EVAL REPLACEMENT
+    '''
+
+    def nn_rollout_eval(self, board_fen):
+        # once it gets to an unexplored node not part of graph, then just use nn to evaluate that position
+        # saves a lot of time, will work as nn gets better trained
+        pass
 
     def rollout(self, num_iterations = 300):
         '''
@@ -153,6 +178,27 @@ class MonteCarloAgent():
         
         # return a node with the highest UCB1 value
         return self.select_node().move
+
+    def rollout_get_policy(self, num_iterations=500):
+        '''
+        This method performs a rollout on the current game state. It will select from the child nodes 
+        a node with the highest UCB1 value, breaking ties randomly. It will then sample states according to some pre-specified policy
+        until it reaches the end, at which point it will update the visit count with: +1, 0.5, 0 for a win, tie, or loss, respectively
+        num_iterations = number of rollouts to perform
+        '''
+
+        for i in range(num_iterations):
+            node = self.select_node()
+            win_update = self.random_rollout_policy(node.board_fen)
+
+            # update the local number of visits for visited and root node
+            node.n += 1
+            node.w += win_update
+            self.cur_node.w += win_update
+            self.cur_node.n += 1
+        
+        # return a node with the highest UCB1 value
+        return self.get_mcts_policy()
 
 def print_node(node, agent, board=False):
     if board:
