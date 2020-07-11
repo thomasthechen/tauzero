@@ -11,19 +11,18 @@ from state import State
 
 
 class TrainingExample(object):
-  def __init__(self, policy, value, board_fen=None):
-
-    self.board_fen = board_fen
-    '''
-    NOTE: the policy is supposed to encompass all possible moves in the Go implementation. here we only have legal moves.
-    Policy is stored as [(move, prob) ...]
-    '''
-    self.policy = policy # NOTE: the policy is supposed to encompass all possible moves in the Go implementation. here we only have legal moves.
-    self.value = value
+    def __init__(self, policy, value, board_fen=None):
+        self.board_fen = board_fen
+        '''
+        NOTE: the policy is supposed to encompass all possible 
+        moves in the Go implementation. here we only have legal moves.
+        Policy is stored as [(move, prob) ..]
+        '''
+        self.policy = policy 
+        self.value = value
     
 
 def main():
-
     NUM_GAMES = 10
     # append with TrainingExamples
     # TODO setup training framework

@@ -3,23 +3,7 @@ import numpy as np
 import pandas as pd
 import random
 
-class StateNode():
-    def __init__(self, board_fen, move=None, nextSibling=None, firstChild=None, n=0, w=0):
-        '''
-        A state node. 
-        board_fen = current state, as characterized by a FEN string
-        n = the current visit count 
-        w = the number of wins that have been won from this node 
-        nextSibling = next sibling state node 
-        firstChild = first child state node 
-        '''
-        self.nextSibling = nextSibling
-        self.firstChild = firstChild
-        self.n = 0
-        self.w = 0
-        self.board_fen = board_fen
-        self.move = move
-
+from GameTree import *
 
 class MonteCarloAgent():
     def __init__(self, board_fen=chess.STARTING_FEN, black = False, c = 1.0):

@@ -3,6 +3,7 @@ import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import Conv2d, ReLU, LeakyReLU, Linear, Dropout, BatchNorm2d, LayerNorm 
+from GameTree import *
 
 TOTAL_PIECES = 12
 BOARD_SIZE = 8 ** 2
@@ -141,4 +142,4 @@ class MoveNet(nn.Module):
 		val = self.value(x) # scalar valued output 
 		logits = self.prob_logits(x) # NOTE: Don't forget to softmax after masking out invalid moves!	
 
-		return val, logits 
+		return val, logits
