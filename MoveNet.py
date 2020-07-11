@@ -31,9 +31,6 @@ def mask_invalid(board, logits, device='cpu'):
 	# we incur a bit of additional overhead
 	logits = logits.view(BOARD_SIZE, BOARD_SIZE)
 
-	# logits = torch.cat((torch.zeros(BOARD_SIZE, 1), logits), dim=1)
-	# logits = torch.cat((torch.zeros(1, BOARD_SIZE+1), logits), dim=0)
-	
 	move_mask = torch.zeros_like(logits, dtype=torch.bool, device=device)
 	
 	# number of legal moves	
@@ -42,7 +39,7 @@ def mask_invalid(board, logits, device='cpu'):
 		coord = parse_move(str(move))
 		move_mask[coord[0]][coord[1]] = 1
 		k += 1	
-		print('Move: {} C1: {} C2: {}'.format(move, coord[0], coord[1]))
+		# print('Move: {} C1: {} C2: {}'.format(move, coord[0], coord[1]))
 
 	move_mask = ~move_mask
 	logits[move_mask] = -1 * 10 ** 10 
@@ -51,7 +48,7 @@ def mask_invalid(board, logits, device='cpu'):
 
 	probs, coords = torch.topk(logits.reshape(-1), k=k)
 
-	print(coords)
+	# print(coords)
 
 	moves = []
 
