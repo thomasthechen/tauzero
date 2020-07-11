@@ -136,7 +136,7 @@ class MoveNet(nn.Module):
 
 		# swap channels dimension to the end
 		x = x.permute(0, 2, 3, 1)
-		print(x.size())	
+		# print(x.size())	
 		x = F.relu(self.fc1(x))
 		x = x.view(-1)	# flatten vector
 		val = self.value(x) # scalar valued output 

@@ -56,7 +56,8 @@ class GraphEdge():
 
         # node is new; we create it and store it in the game dict
         else:
-            all_node_dict[node_key] = GraphNode(node_key, [self])  # add node to the game dict set 
+            node = GraphNode(node_key, [self]) 
+            all_node_dict[node_key] = node   # add node to the game dict set 
             self.dest = all_node_dict.get(node_key)  # update edge destination
 
     def __str__(self):
@@ -101,7 +102,6 @@ class GraphNode():
         Params
         :all_edge_dict: mapping from tuple --> edge for all edges in the graph (check to preserve edge statistics) 
         '''
-
         # edges have already been generated
         if len(self.out_edges) > 0:
             return
