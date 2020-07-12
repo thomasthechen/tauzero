@@ -26,10 +26,14 @@ def main():
     NUM_GAMES = 10
     # append with TrainingExamples
     # TODO setup training framework
+
+    agent = MonteCarloAgent(board_fen=chess.STARTING_FEN)
+
     training_examples = []
 
     for i in range(NUM_GAMES):
         fen = chess.STARTING_FEN
+        agent.reset_board_and_tree(fen)
         board = chess.Board(fen)
 
         while not board.is_game_over():
@@ -51,45 +55,28 @@ def main():
             print('\n')
             '''
             if board.turn:
-                aimove = None
-                agent = MonteCarloAgent(board_fen=board.fen(), black=False)
-                agent.generate_possible_children()
-                move_probs = agent.rollout_get_policy()
-
-                moves = [x[1] for x in move_probs]
-                probs = [x[0] for x in move_probs]
-                probs = probs/np.sum(probs)
-
-                value = agent.cur_node.w/agent.cur_node.n
-                aimove = np.random.choice(moves, p=probs)
-
+                aimove, val, improved_policy = agent.play_move()
                 print('\nWHITE CHOOSES', aimove)
-                board.push(aimove)
 
-                training_examples.append(TrainingExample(move_probs, value, board.fen()))
+                assert board.fen() == aimove.source.board
+
+                board.push(aimove.move)
+
+                training_examples.append(TrainingExample(improved_policy, val, aimove.source))
             else:
-                aimove = None
-                agent = MonteCarloAgent(board_fen=board.fen(), black=True)
-                agent.generate_possible_children()
-                move_probs = agent.rollout_get_policy()
-
-                moves = [x[1] for x in move_probs]
-                probs = [x[0] for x in move_probs]
-                probs = probs/np.sum(probs)
-
-                value = agent.cur_node.w/agent.cur_node.n
-
-                aimove = np.random.choice(moves, p=probs) 
-                
+                aimove, val, improved_policy = agent.play_move()
                 print('\nBLACK CHOOSES', aimove)
-                board.push(aimove)
 
-                training_examples.append(TrainingExample(move_probs, value, board.fen()))
+                assert board.fen() == aimove.source.board
+
+                board.push(aimove.move)
+
+                training_examples.append(TrainingExample(improved_policy, val, aimove.source))
                 
-
         print(f'Game over. {"Black" if board.turn else "White"} wins.')
+
         '''
-        TODO: implement training framework here
+        TODO: implement training framework HERE using training_examples
         '''
 
 # run the main function

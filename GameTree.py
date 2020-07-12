@@ -41,7 +41,7 @@ class GraphEdge():
         '''
         
         # already generated current node        
-        if self.node is not None:
+        if self.dest is not None:
             return
 
         # create the fen string for the destination node    
