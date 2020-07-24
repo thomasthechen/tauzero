@@ -12,12 +12,12 @@ from weakref import ref, WeakValueDictionary, WeakSet
 from collections import OrderedDict, namedtuple
 
 def bitboard(fen, device='cpu'):
-	'''
-	One-hot encode our board in the desired format. Note that we have to add an additional 
-	dimension to accommodate PyTorch's requirement that there be a batch dimension. 
-	We can do this using unsqueeze(). We can also optionally Cythonize this for 
-	speed improvements. 
-	'''
+    '''
+    One-hot encode our board in the desired format. Note that we have to add an additional 
+    dimension to accommodate PyTorch's requirement that there be a batch dimension. 
+    We can do this using unsqueeze(). We can also optionally Cythonize this for 
+    speed improvements. 
+    '''
     board = chess.Board(fen)
     assert board.is_valid()
     bstate = np.zeros((13,8,8), np.uint8)
@@ -32,16 +32,16 @@ def bitboard(fen, device='cpu'):
     bstate[12] = (board.turn*1.0)
 
     # 257 bits according to readme, add extra dimension for batch size
-    return torch.tensor(bstate, dtype=torch.float64, device=device).unsqueeze()
+    return torch.tensor(bstate, dtype=torch.float64, device=device).unsqueeze(dim=0)
 
 '''
 EVERYTHING BENEATH THIS LINE IS OLD, GRACIOUSLY PROVIDED BY AUTHOR GEORGE HOTZ.
 IT IS INCLUDED SOLELY FOR REFERENCE, AND IS NOT USED IN THE FINAL PROEJCT. 
 '''
 class ChessValueDataset(Dataset):
-	'''
-	From George Hotz's implementation. Solely here for reference
-	'''
+    '''
+    From George Hotz's implementation. Solely here for reference
+    '''
     def __init__(self):
         dat = np.load("processed/dataset_25M.npz")
         self.X = dat['arr_0']
@@ -55,9 +55,9 @@ class ChessValueDataset(Dataset):
         return (self.X[idx], self.Y[idx])
 
 def train_george_hotz_model():
-	'''
-	From George Hotz's implementation. Solely here for reference
-	'''
+    '''
+    From George Hotz's implementation. Solely here for reference
+    '''
     device = "cpu"
 
     chess_dataset = ChessValueDataset()

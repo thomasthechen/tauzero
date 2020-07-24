@@ -2,6 +2,7 @@ import chess
 import torch
 import numpy as np
 import pandas as pd
+import pdb
 import random
 
 from weakref import ref, WeakValueDictionary, WeakSet 
@@ -10,12 +11,26 @@ from utils import bitboard
 from GameTree import *
 from MoveNet import *
 
+def ucb(edge):
+    '''
+    Helper Method:
+    Computes the UCB1 formula. Returns infinity if nodes haven't been visited.
+    This way we'll consider each node at the we consider every node at least once 
+    before actually starting to compute true UCB1 values. We can probabilistically weight this 
+    according to recommendations by an NN 
+    '''
+    if edge.N == 0:
+        return np.inf
+    else:
+        return edge.W/edge.N + self.c * np.sqrt(np.log(self.tree.root.visits)/edge.N)
+
+def puct(c, p, N_s_b, edge):
+    return c * p * np.sqrt(N_s_b) * 1 / (1 + edge.N)
 
 class MonteCarloAgent():
     def __init__(self, board_fen=chess.STARTING_FEN, c=2, **kwargs): 
         '''
         We take the current game state which is parameterized by its FEN string. 
-        self.board = the current chess.Board object which we'll use to handle game logic
         self.cur_node = the StateNode that houses the root of the game tree which we wish to explore
         self.black = bool, True if the agent is playing black 
         self.c = float, a hyperparameter controlling the degree of exploration in the UCB1 bandit formula
@@ -24,139 +39,133 @@ class MonteCarloAgent():
         self.tree = GameTree(board_fen)
 
         # retain the board
-        self.board = chess.Board(board_fen)
         self.c = c
-
-        # game_node_dict will retain a map of board_fen --> StateNode
-        # self.game_node_dict = {}
-        # self.game_node_dict[board_fen] = self.cur_node
-        # self.game_edge_dict = {}
-
-    def compute_ucb1(self, edge):
-        '''
-        Helper Method:
-        Computes the UCB1 formula. Returns infinity if nodes haven't been visited.
-        This way we'll consider each node at the we consider every node at least once 
-        before actually starting to compute true UCB1 values. We can probabilistically weight this 
-        according to recommendations by an NN 
-        '''
-        if edge.N == 0:
-            return np.inf
-        else:
-            return edge.W/edge.N + self.c * np.sqrt(np.log(self.tree.root.visits)/edge.N)
-
-    def select_node_explore(self, node):
-        '''
-        Helper Method: selects node in mcts exploration lookahead, based on ucb criterion
-        '''
-        ties = []
-        max_ucb = -np.inf
-        for edge in node.out_edges:
-
-            ucb = self.compute_ucb1(edge)
-            if ucb > max_ucb:
-                ties = [edge]
-                max_ucb = ucb
-            elif ucb == max_ucb:
-                ties.append(edge)
-        
-        return random.choice(ties)
-
+        self.tau = 1.0
+ 
     def re_root_tree(self, fen, edge):
         '''
         Helper method: re-roots the mcts tree at that board state
-        '''
-    
+        '''    
         if self.tree.nodes[fen] is not None:
             self.tree.root = self.tree.nodes[fen]
         else:
-            # generate new root
-            new_root = GraphNode(fen, [edge])
+            # generate new root; we can drop 
+            # the rest of the tree
+            new_root = GraphNode(fen, [])
             self.tree.root = new_root
-    
-    def reset_board_and_tree(self, fen):
-        '''
-        Helper method: resets tree and board state for a new game
-        '''
-        self.board = chess.Board(fen)
-        self.re_root_tree(fen, None)
 
-    def play_move(self):
-        '''
-        Main overhead method: runs mcts search to get move and updates tree and internal board state
-        returns val, improved policy to be used in main training script as a training example
-        We could alternatively train the NN in this method, but we wouldn't be able to compile experiences from multiple MCTS agents
-        '''
-        val, improved_policy = self.search_and_get_mcts_improved_policy()
+    def select_move(self, num_searches=300):
+        for _ in range(num_searches):
+            self.tree_search()
 
-        moves = [x[1] for x in improved_policy]
-        probs = [x[0] for x in improved_policy]
+        root = ref(self.root)
+        board = chess.Board(root.board)
+        temp = 1e-5 if board.fullmove_number > 30 else 1.0
+        N_s_b_t = 0.0
+        for x in root.out_edges.keys():
+            N_s_b_t += pow(root.out_edges[k].N, 1/temp)
 
-        aimove = np.random.choice(moves, p=probs)
-        print('AI PLAYS', aimove.move)
+        key = None
+        max_prob = 0.0
+        for k in root.out_edges.keys():
+            prob = pow(root.out_edges[k].N, temp) / N_s_b_t
+            if prob >= max_prob:
+                max_prob = prob
+                key = k
+        print('Agent chooses {}'.format(key))
+        next_edge = ref(root.out_edges[key])
+        next_edge.gen_nodes(self.tree.nodes)
+        board.push(next_edge.a)
+        self.board = board.fen()
+        self.root = next_edge.dest
 
-        self.board.push(aimove.move)
-        fen = self.board.fen()
+    # runs a tree search rollout and update steps
+    def tree_search(self):        
+        # we use these references to reduce method signature length
+        tree = self.tree
+        root = self.tree.root
+        net = self.policy_net
+        root.gen_edges(tree.edges)
+        cur_node = root
+        is_white = chess.Board(root.board).turn
 
-        self.re_root_tree(fen, aimove)
-        return aimove, val, improved_policy
-        
+        # method to run net; lambda to save time
+        move_probs = lambda f, n=net, b=bitboard: n(b(f).float())
+ 
+        # in tree phase of the search
+        selected_leaf = False
 
+        node_stack = []
+        while (not selected_leaf):
+            # compute edges
+            cur_node.gen_edges(tree.edges)
+             
+            # global action statistics
+            N_s_b = 0 
+            for k in cur_node.out_edges.keys():
+                N_s_b += cur_node.out_edges[k].N 
 
-    def search_and_get_mcts_improved_policy(self, temp=0.7, num_iterations = 300):
-        '''
-        Main Search Method: uses MCTS search to produce value and improved policy given a root state of tree
-        '''
-       
-        turn = chess.Board(self.tree.root.board).turn
-        val = self.search(self.tree.root, turn)
+            # compute the move probabilities
+            val, logits = move_probs(cur_node.board)
+            probs, moves = mask_invalid(chess.Board(cur_node.board), logits)            
 
-        improved_policy = []
-        sum = 0
-        for edge in self.tree.root.out_edges:
-            # temp is a hyperparameter called temperature that controls the degree of exploration/exploitation. Set arbitrarily to 0.7 for now
-            improved_policy.append(edge.N ** temp, edge)
-            sum += edge.N ** temp
+            # a_t contains the max ucb selection
+            a_t = torch.tensor(-float('inf'))
+            next_edge = None 
+            i_t = 0 
+            # iterate over the moves, looking for the max a_t
+            for i, move in enumerate(moves):
+                # generate the edge key
+                edge_key = Edge(cur_node.board, move)
+                # pdb.set_trace()
+                
+                # compute candidate a_t as PUCT + Q
+                a_t_i = puct(c, probs[i], N_s_b, cur_node.out_edges[edge_key]) + torch.tensor(cur_node.out_edges[edge_key].Q) # torch.tensor
 
-        improved_policy = [(x[0]/sum, x[1]) for x in improved_policy]
+                # set new maximum if clear winner
+                if a_t_i.item() > a_t.item():
+                    a_t = a_t_i
+                    next_edge = edge_key
+                    i_t = 0
 
-        # state + val and improved policy serve as a training example for the NN, so they're both passed even tho the agent will only use the improved policy
-        return val, improved_policy
+                # break ties randomly
+                elif a_t_i.item() == a_t.item():
+                    if random.choice([0, 1]):
+                        a_t = a_t_i
+                        next_edge = edge_key
 
-    def search(self, node, orig_turn):
-        '''
-        Helper Recursive Search Method: to take in node, give back win update
-        orig_turn is the side of the agent--black or white
-        
-        TODO: update edges generated from gen_edges w/ nn policy and value
-        '''
-        board = chess.Board(node.board)
-        if board.is_game_over:
-            if board.turn == orig_turn:
-                return 1
+            # set the next edge
+            next_edge = cur_node.out_edges[next_edge]
+            next_edge.gen_nodes(tree.nodes)
+            cur_node = next_edge.dest
+ 
+            node_stack.append(next_edge)
+            node_stack.append(cur_node)
+
+            # break out of the enclosing loop
+            if cur_node.visits == 0:
+                selected_leaf = True
+
+        # backup phase: generate edges, val, logits, probs, and moves
+        cur_node.gen_edges()
+        val, logits = move_probs(cur_node.board)
+        probs, moves = mask_invalid(chess.Board(cur_node.board), logits)
+
+        # expand the node and initialize values of P
+        for i, move in enumerate(moves):
+            edge_key = Edge(cur_node.board, move)
+            cur_node.out_edges[edge_key].P = probs[i]
+
+        # backup phase
+        while (len(node_stack) != 0):
+            cur_node = node_stack.pop()
+            if isinstance(cur_node, GraphNode):
+                cur_node.visits += 1
             else:
-                return -1
-
-        if len(node.out_edges) == 0:
-            node.gen_edges(self.tree.edges)
-            val, logits = self.policy_net(bitboard(node.board))
-            # USE THE NN TO INIT VALUES HERE
-            # INCLUDE Q VALUE IN EDGE
-            return -val
-
-        best_edge = self.select_node_explore(node)
-        best_a = best_edge.action
-        new_node = best_edge.dest
-
-        val = self.search(new_node, orig_turn)
-
-        # update values
-        best_edge.N += 1
-        best_edge.W += val
-
-        return -val
-        
-
+                cur_node.W += val.item()
+                cur_node.N += 1.0
+                cur_node.Q = W / N
 
 if __name__ == '__main__':
-    pass
+    x = MonteCarloAgent()
+    x.tree_search()

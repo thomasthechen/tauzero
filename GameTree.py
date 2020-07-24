@@ -89,8 +89,8 @@ class GraphNode():
         '''        
         assert is_iterable(prev_edges)
         self.in_edges = WeakSet(prev_edges)
-        self.out_edges = []
-        self.visits = 0
+        self.out_edges = {}
+        self.visits = 0. 
         self.board = board_fen
         self.indeg = len(self.in_edges)
         self.outdeg = len(self.out_edges)
@@ -110,7 +110,6 @@ class GraphNode():
 
         # New edge for each move (Edge is state + action pair)
         for move in board.legal_moves:
-            board.push(move)
             edge_key = Edge(board.fen(), str(move))
             next_edge = all_edge_dict.get(edge_key, None)
             
@@ -122,9 +121,7 @@ class GraphNode():
             else:
                 edge = GraphEdge(edge_key.s, edge_key.a, self)
                 all_edge_dict[edge_key] = edge
-                self.out_edges.append(all_edge_dict[edge_key])
-
-            board.pop()
+                self.out_edges[edge_key] = all_edge_dict[edge_key]
 
         self.outdeg += len(self.out_edges)
 
