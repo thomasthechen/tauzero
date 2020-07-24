@@ -42,18 +42,6 @@ class MonteCarloAgent():
         self.c = c
         self.tau = 1.0
  
-    def re_root_tree(self, fen, edge):
-        '''
-        Helper method: re-roots the mcts tree at that board state
-        '''    
-        if self.tree.nodes[fen] is not None:
-            self.tree.root = self.tree.nodes[fen]
-        else:
-            # generate new root; we can drop 
-            # the rest of the tree
-            new_root = GraphNode(fen, [])
-            self.tree.root = new_root
-
     def select_move(self, num_searches=300):
         for _ in range(num_searches):
             self.tree_search()
