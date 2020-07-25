@@ -22,10 +22,10 @@ def mask_invalid(board, logits, device='cpu'):
     
     def parse_move(move_str, device='cpu'):
         let_1 = BOARD_DICT.get(move_str[0])
-        num_1 = int(move_str[1])
+        num_1 = int(move_str[1])-1 
 
         let_2 = BOARD_DICT.get(move_str[2])
-        num_2 = int(move_str[3])
+        num_2 = int(move_str[3])-1 
 
         return (num_1 + let_1 * (BOARD_DIM ** 1)), (num_2 +  let_2 * (BOARD_DIM ** 1))
 
@@ -56,11 +56,11 @@ def mask_invalid(board, logits, device='cpu'):
     for x in coords:
         source_move = x.item() // BOARD_SIZE
         source_letter = INV_BOARD_DICT.get(source_move // BOARD_DIM)
-        source_coord =     source_move % BOARD_DIM
+        source_coord = source_move % BOARD_DIM + 1
 
         end_move = x.item() % BOARD_SIZE
         end_letter = INV_BOARD_DICT.get(end_move // BOARD_DIM)
-        end_coord = end_move % BOARD_DIM
+        end_coord = end_move % BOARD_DIM + 1
         moves.append(''.join([source_letter, str(source_coord), end_letter, str(end_coord)]))
 
     return probs, moves

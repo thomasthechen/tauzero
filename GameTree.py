@@ -2,6 +2,7 @@ import chess
 import numpy as np
 import pandas as pd
 import random
+import sys
 from weakref import ref, WeakValueDictionary, WeakSet 
 from collections import OrderedDict, namedtuple
 
@@ -12,7 +13,7 @@ Edge = namedtuple('Edge', ['s', 'a'])
 is_iterable = lambda val: hasattr(val,'__iter__') or hasattr(val,'__getitem__')
 
 class GraphEdge():
-    def __init__(self, board_fen, action, source):
+    def __init__(self, board_fen, action):
         '''
         A state node. 
         board_fen = source node state, as characterized by a FEN string
@@ -26,7 +27,6 @@ class GraphEdge():
         self.P = 0
         self.state = board_fen
         self.action = action
-        self.source = ref(source)  # weak references to the source to prevent circular references
         self.dest = None
 
     def gen_nodes(self, all_node_dict):
@@ -46,17 +46,22 @@ class GraphEdge():
 
         # create the fen string for the destination node    
         board = chess.Board(self.state)
-        node_key = board.push(self.action).fen()
+        try:
+            board.push(chess.Move.from_uci(self.action))
+        except:
+            print(self.action)
+            print(board)
+            sys.exit(1)
+        node_key = board.fen()
         node = all_node_dict.get(node_key, None)
-        
+ 
         # node was previously considered and retained 
         if node:
             self.dest = node  # update edge destination
-            self.dest.update_indeg(self)  # update source edges from the node
 
         # node is new; we create it and store it in the game dict
         else:
-            node = GraphNode(node_key, [self]) 
+            node = GraphNode(node_key) 
             all_node_dict[node_key] = node   # add node to the game dict set 
             self.dest = all_node_dict.get(node_key)  # update edge destination
 
@@ -74,7 +79,7 @@ class GraphEdge():
         return (self.state + self.action) < (N2.state + N2.action)
 
 class GraphNode():
-    def __init__(self, board_fen, prev_edges):
+    def __init__(self, board_fen):
         '''
         GraphNode objects store nodes corresponding to game states and all references pointing to all 
         edges that point at the object. References to edges / nodes higher in the tree are weak by default 
@@ -87,12 +92,9 @@ class GraphNode():
         :indeg: in-degree of this node in the game tree
         :outdeg: out-degree of this node in the game tree
         '''        
-        assert is_iterable(prev_edges)
-        self.in_edges = WeakSet(prev_edges)
         self.out_edges = {}
         self.visits = 0. 
         self.board = board_fen
-        self.indeg = len(self.in_edges)
         self.outdeg = len(self.out_edges)
 
     def gen_edges(self, all_edge_dict): 
@@ -119,30 +121,18 @@ class GraphNode():
 
             # edge doesn't exist; create it and append
             else:
-                edge = GraphEdge(edge_key.s, edge_key.a, self)
+                edge = GraphEdge(edge_key.s, edge_key.a)
                 all_edge_dict[edge_key] = edge
                 self.out_edges[edge_key] = all_edge_dict[edge_key]
 
         self.outdeg += len(self.out_edges)
 
-    def update_indeg(self, edge): 
-        '''
-        This method will add a weak reference to an edge that points to this Node. If the Node already exists
-        and we reach it from a different state action pair, we can retain it.
-        
-        Params
-        :edge: the edge to add to the set of in-edges
-        ''' 
-        if edge not in self.in_edges:
-            self.indeg += 1
-            self.in_edges.add(edge)
-
     def __str__(self):
-        return 'Visits: {} Board: {} Last Edge: {}'.format(self.visits, self.board, [x for x in self.in_edges])
+        return 'Visits: {} Board: {}'.format(self.visits, self.board)
 
 class GameTree():
     def __init__(self, board_fen):
-        self.root = GraphNode(board_fen, [])
+        self.root = GraphNode(board_fen)
         self.edges = WeakValueDictionary()
         self.nodes = WeakValueDictionary()
         self.nodes[board_fen] = self.root

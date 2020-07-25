@@ -46,26 +46,23 @@ class MonteCarloAgent():
         for _ in range(num_searches):
             self.tree_search()
 
-        root = ref(self.root)
-        board = chess.Board(root.board)
+        board = chess.Board(self.tree.root.board)
         temp = 1e-5 if board.fullmove_number > 30 else 1.0
         N_s_b_t = 0.0
-        for x in root.out_edges.keys():
-            N_s_b_t += pow(root.out_edges[k].N, 1/temp)
+        for k in self.tree.root.out_edges.keys():
+            N_s_b_t += pow(self.tree.root.out_edges[k].N, 1/temp)
 
         key = None
         max_prob = 0.0
-        for k in root.out_edges.keys():
-            prob = pow(root.out_edges[k].N, temp) / N_s_b_t
+        for k in self.tree.root.out_edges.keys():
+            prob = pow(self.tree.root.out_edges[k].N, temp) / N_s_b_t
             if prob >= max_prob:
                 max_prob = prob
                 key = k
+
         print('Agent chooses {}'.format(key))
-        next_edge = ref(root.out_edges[key])
-        next_edge.gen_nodes(self.tree.nodes)
-        board.push(next_edge.a)
-        self.board = board.fen()
-        self.root = next_edge.dest
+        self.tree.root.out_edges[key].gen_nodes(self.tree.nodes)
+        self.tree.root = self.tree.root.out_edges[key].dest
 
     # runs a tree search rollout and update steps
     def tree_search(self):        
@@ -87,7 +84,7 @@ class MonteCarloAgent():
         while (not selected_leaf):
             # compute edges
             cur_node.gen_edges(tree.edges)
-             
+            
             # global action statistics
             N_s_b = 0 
             for k in cur_node.out_edges.keys():
@@ -108,7 +105,7 @@ class MonteCarloAgent():
                 # pdb.set_trace()
                 
                 # compute candidate a_t as PUCT + Q
-                a_t_i = puct(c, probs[i], N_s_b, cur_node.out_edges[edge_key]) + torch.tensor(cur_node.out_edges[edge_key].Q) # torch.tensor
+                a_t_i = puct(self.c, probs[i], N_s_b, cur_node.out_edges[edge_key]) + torch.tensor(cur_node.out_edges[edge_key].Q) # torch.tensor
 
                 # set new maximum if clear winner
                 if a_t_i.item() > a_t.item():
@@ -135,13 +132,14 @@ class MonteCarloAgent():
                 selected_leaf = True
 
         # backup phase: generate edges, val, logits, probs, and moves
-        cur_node.gen_edges()
+        cur_node.gen_edges(tree.edges)
         val, logits = move_probs(cur_node.board)
         probs, moves = mask_invalid(chess.Board(cur_node.board), logits)
 
         # expand the node and initialize values of P
         for i, move in enumerate(moves):
             edge_key = Edge(cur_node.board, move)
+            cur_node.out_edges[edge_key] = GraphEdge(cur_node.board, move) 
             cur_node.out_edges[edge_key].P = probs[i]
 
         # backup phase
@@ -152,8 +150,8 @@ class MonteCarloAgent():
             else:
                 cur_node.W += val.item()
                 cur_node.N += 1.0
-                cur_node.Q = W / N
+                cur_node.Q = cur_node.W / cur_node.N
 
 if __name__ == '__main__':
     x = MonteCarloAgent()
-    x.tree_search()
+    x.select_move(20)
