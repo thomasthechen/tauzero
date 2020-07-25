@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 import pdb
 import random
+import timeit
+import sys
 
 from weakref import ref, WeakValueDictionary, WeakSet 
 from collections import OrderedDict, namedtuple
@@ -41,6 +43,15 @@ class MonteCarloAgent():
         # retain the board
         self.c = c
         self.tau = 1.0
+
+    def push_move(self, move):
+        move = str(move)
+        board = self.tree.root.board
+        edge_key = Edge(board, move)
+        self.tree.root.gen_edges(self.tree.edges)
+        self.tree.root = self.tree.root.out_edges[edge_key]
+        self.tree.root.gen_nodes(self.tree.nodes)
+        self.tree.root = self.tree.root.dest
  
     def select_move(self, num_searches=300):
         for _ in range(num_searches):
@@ -65,11 +76,16 @@ class MonteCarloAgent():
         self.tree.root = self.tree.root.out_edges[key].dest
 
     # runs a tree search rollout and update steps
-    def tree_search(self):        
+    def tree_search(self):
         # we use these references to reduce method signature length
         tree = self.tree
         root = self.tree.root
         net = self.policy_net
+
+        # we will enable trainable gradients later
+        net.eval()
+        torch.autograd.set_grad_enabled(False)
+
         root.gen_edges(tree.edges)
         cur_node = root
         is_white = chess.Board(root.board).turn
@@ -84,7 +100,7 @@ class MonteCarloAgent():
         while (not selected_leaf):
             # compute edges
             cur_node.gen_edges(tree.edges)
-            
+
             # global action statistics
             N_s_b = 0 
             for k in cur_node.out_edges.keys():
@@ -92,18 +108,18 @@ class MonteCarloAgent():
 
             # compute the move probabilities
             val, logits = move_probs(cur_node.board)
-            probs, moves = mask_invalid(chess.Board(cur_node.board), logits)            
+            probs, moves = mask_invalid(chess.Board(cur_node.board), logits)
 
             # a_t contains the max ucb selection
             a_t = torch.tensor(-float('inf'))
             next_edge = None 
-            i_t = 0 
+
             # iterate over the moves, looking for the max a_t
             for i, move in enumerate(moves):
                 # generate the edge key
                 edge_key = Edge(cur_node.board, move)
                 # pdb.set_trace()
-                
+ 
                 # compute candidate a_t as PUCT + Q
                 a_t_i = puct(self.c, probs[i], N_s_b, cur_node.out_edges[edge_key]) + torch.tensor(cur_node.out_edges[edge_key].Q) # torch.tensor
 
@@ -111,7 +127,6 @@ class MonteCarloAgent():
                 if a_t_i.item() > a_t.item():
                     a_t = a_t_i
                     next_edge = edge_key
-                    i_t = 0
 
                 # break ties randomly
                 elif a_t_i.item() == a_t.item():
@@ -154,4 +169,6 @@ class MonteCarloAgent():
 
 if __name__ == '__main__':
     x = MonteCarloAgent()
-    x.select_move(20)
+    num_its = int(sys.argv[1])
+    duration = timeit.timeit("x.tree_search()", number=num_its, globals=locals())
+    print("%i searches took %.4f s, (%f/s)" % (num_its, duration, num_its/duration))

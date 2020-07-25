@@ -39,7 +39,7 @@ class GraphEdge():
         :all_node_dict: dictionary mapping from fen --> nodes for previously considered and 
         retained nodes in the tree.
         '''
-        
+
         # already generated current node        
         if self.dest is not None:
             return
@@ -114,7 +114,7 @@ class GraphNode():
         for move in board.legal_moves:
             edge_key = Edge(board.fen(), str(move))
             next_edge = all_edge_dict.get(edge_key, None)
-            
+
             # edge exists
             if next_edge:
                 self.out_edges.append(all_edge_dict[edge_key])
