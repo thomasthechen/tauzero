@@ -13,19 +13,6 @@ from utils import bitboard
 from GameTree import *
 from MoveNet import *
 
-def ucb(edge):
-    '''
-    Helper Method:
-    Computes the UCB1 formula. Returns infinity if nodes haven't been visited.
-    This way we'll consider each node at the we consider every node at least once 
-    before actually starting to compute true UCB1 values. We can probabilistically weight this 
-    according to recommendations by an NN 
-    '''
-    if edge.N == 0:
-        return np.inf
-    else:
-        return edge.W/edge.N + self.c * np.sqrt(np.log(self.tree.root.visits)/edge.N)
-
 def puct(c, p, N_s_b, edge):
     return c * p * np.sqrt(N_s_b) * 1 / (1 + edge.N)
 
@@ -53,7 +40,9 @@ class MonteCarloAgent():
         self.tree.root.gen_nodes(self.tree.nodes)
         self.tree.root = self.tree.root.dest
  
-    def select_move(self, num_searches=300):
+    def select_move(self, num_searches=100):
+        policy = []
+
         for _ in range(num_searches):
             self.tree_search()
 
@@ -67,13 +56,19 @@ class MonteCarloAgent():
         max_prob = 0.0
         for k in self.tree.root.out_edges.keys():
             prob = pow(self.tree.root.out_edges[k].N, temp) / N_s_b_t
+            policy.append(((self.tree.root.out_edges[k].state, self.tree.root.out_edges[k].action), prob))
             if prob >= max_prob:
                 max_prob = prob
                 key = k
 
         print('Agent chooses {}'.format(key))
+
+        Q = self.tree.root.out_edges[key].Q
+
         self.tree.root.out_edges[key].gen_nodes(self.tree.nodes)
         self.tree.root = self.tree.root.out_edges[key].dest
+        # return for training
+        return Q, policy
 
     # runs a tree search rollout and update steps
     def tree_search(self):
@@ -97,7 +92,17 @@ class MonteCarloAgent():
         selected_leaf = False
 
         node_stack = []
+
+        val = 0
+
         while (not selected_leaf):
+            # TODO: Check if state is checkmated or stalemated
+            bd = chess.Board(cur_node.board)
+            if bd.is_checkmate():
+                break
+            elif bd.is_stalemate():
+                # note val ranges from -1 to 1
+                break
             # compute edges
             cur_node.gen_edges(tree.edges)
 
@@ -106,7 +111,7 @@ class MonteCarloAgent():
             for k in cur_node.out_edges.keys():
                 N_s_b += cur_node.out_edges[k].N 
 
-            # compute the move probabilities
+            # compute the move probabilities # use nn prob not collected prob to decide search?
             val, logits = move_probs(cur_node.board)
             probs, moves = mask_invalid(chess.Board(cur_node.board), logits)
 
@@ -146,24 +151,40 @@ class MonteCarloAgent():
             if cur_node.visits == 0:
                 selected_leaf = True
 
-        # backup phase: generate edges, val, logits, probs, and moves
-        cur_node.gen_edges(tree.edges)
-        val, logits = move_probs(cur_node.board)
-        probs, moves = mask_invalid(chess.Board(cur_node.board), logits)
 
-        # expand the node and initialize values of P
-        for i, move in enumerate(moves):
-            edge_key = Edge(cur_node.board, move)
-            cur_node.out_edges[edge_key] = GraphEdge(cur_node.board, move) 
-            cur_node.out_edges[edge_key].P = probs[i]
+        bd = chess.Board(cur_node.board)
+        if bd.is_checkmate():
+            val = torch.tensor(-1)
+        elif bd.is_stalemate():
+            # note val ranges from -1 to 1
+            val = torch.tensor(0)
+        else:
+            # backup phase: generate edges, val, logits, probs, and moves
+            cur_node.gen_edges(tree.edges)
+            val, logits = move_probs(cur_node.board)
+            probs, moves = mask_invalid(chess.Board(cur_node.board), logits)
+
+            # expand the node and initialize values of P
+            for i, move in enumerate(moves):
+                edge_key = Edge(cur_node.board, move)
+                cur_node.out_edges[edge_key] = GraphEdge(cur_node.board, move) 
+                cur_node.out_edges[edge_key].P = probs[i]
 
         # backup phase
+        ## TODO HAVE TO ACCOUNT FOR TURN OF VAL RETURNED AND CURR BOARD 
+
+        end_turn = chess.Board(cur_node.board).turn
+        # if checkmated and these two are opposites, then the start state is a winning state, else losing
+
         while (len(node_stack) != 0):
             cur_node = node_stack.pop()
             if isinstance(cur_node, GraphNode):
                 cur_node.visits += 1
             else:
-                cur_node.W += val.item()
+                start_turn = chess.Board(cur_node.state).turn
+                value = val.item() * (2 * (start_turn == end_turn) - 1)
+        
+                cur_node.W += value
                 cur_node.N += 1.0
                 cur_node.Q = cur_node.W / cur_node.N
 
