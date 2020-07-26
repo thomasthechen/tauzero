@@ -4,10 +4,10 @@ import torch
 import argparse
 import numpy as np
 
-from minimax_agent import MiniMaxAgent
-from value_approximator import Net
+# from minimax_agent import MiniMaxAgent
+# from value_approximator import Net
 from monte_carlo_agent import MonteCarloAgent
-from state import State
+# from state import State
 
 
 class TrainingExample(object):
@@ -23,7 +23,7 @@ class TrainingExample(object):
     
 
 def main():
-    NUM_GAMES = 10
+    NUM_GAMES = 1
     # append with TrainingExamples
     # TODO setup training framework
 
@@ -33,7 +33,7 @@ def main():
 
     for i in range(NUM_GAMES):
         fen = chess.STARTING_FEN
-        agent.reset_board_and_tree(fen)
+        # agent.reset_board_and_tree(fen)
         board = chess.Board(fen)
 
         while not board.is_game_over():
@@ -47,36 +47,29 @@ def main():
             # display board
             print(board)
             print('\n')
-            '''
-            # display possible moves
-            print('Possible moves: ', end = '')
-            for move in board.legal_moves:
-                print(move.uci() + ' ', end  = '')
-            print('\n')
-            '''
+
             if board.turn:
-                aimove, val, improved_policy = agent.play_move()
+               
+                aimove, val, improved_policy = agent.select_move()
                 print('\nWHITE CHOOSES', aimove)
 
-                assert board.fen() == aimove.source.board
+                assert board.fen() == aimove.s
+                board.push(chess.Move.from_uci(aimove.a))
 
-                board.push(aimove.move)
-
-                training_examples.append(TrainingExample(improved_policy, val, aimove.source))
+                training_examples.append(TrainingExample(improved_policy, val, aimove.s))
             else:
-                aimove, val, improved_policy = agent.play_move()
+                aimove, val, improved_policy = agent.select_move()
                 print('\nBLACK CHOOSES', aimove)
 
-                assert board.fen() == aimove.source.board
+                assert board.fen() == aimove.s
+                board.push(chess.Move.from_uci(aimove.a))
 
-                board.push(aimove.move)
+                training_examples.append(TrainingExample(improved_policy, val, aimove.s))
 
-                training_examples.append(TrainingExample(improved_policy, val, aimove.source))
-                
         print(f'Game over. {"Black" if board.turn else "White"} wins.')
-
+        
         '''
-        TODO: implement training framework HERE using training_examples
+        TODO: implement training framework HERE using training_examples; train on value and on improved policy over legal moves
         '''
 
 # run the main function

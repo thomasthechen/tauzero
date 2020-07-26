@@ -68,7 +68,7 @@ class MonteCarloAgent():
         self.tree.root.out_edges[key].gen_nodes(self.tree.nodes)
         self.tree.root = self.tree.root.out_edges[key].dest
         # return for training
-        return Q, policy
+        return key, Q, policy
 
     # runs a tree search rollout and update steps
     def tree_search(self):

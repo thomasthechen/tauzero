@@ -124,7 +124,6 @@ class MoveNet(nn.Module):
         self.prob_logits = Linear(BOARD_SIZE * 128, every_move)
         self.blocks = nn.Sequential(*first_layer, *blocks)
         self.convs_per_block = convs_per_block
-
     def forward(self, x):
         prev_x = []    
         for idx, layer in enumerate(self.blocks):
@@ -138,8 +137,9 @@ class MoveNet(nn.Module):
         x = x.permute(0, 2, 3, 1)
         # print(x.size())    
         x = F.relu(self.fc1(x))
-        x = x.view(-1)    # flatten vector
+        x = x.view(x.shape[0], -1)    # flatten vector
         val = self.value(x) # scalar valued output 
         logits = self.prob_logits(x) # NOTE: Don't forget to softmax after masking out invalid moves!    
+        val = val.view(-1)
 
         return val, logits
