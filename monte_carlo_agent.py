@@ -17,7 +17,7 @@ def puct(c, p, N_s_b, edge):
     return c * p * np.sqrt(N_s_b) * 1 / (1 + edge.N)
 
 class MonteCarloAgent():
-    def __init__(self, board_fen=chess.STARTING_FEN, c=2, **kwargs): 
+    def __init__(self, board_fen=chess.STARTING_FEN, c=0.4, **kwargs): 
         '''
         We take the current game state which is parameterized by its FEN string. 
         self.cur_node = the StateNode that houses the root of the game tree which we wish to explore
@@ -25,6 +25,7 @@ class MonteCarloAgent():
         self.c = float, a hyperparameter controlling the degree of exploration in the UCB1 bandit formula
         '''
         self.policy_net = MoveNet(**kwargs)
+        self.policy_net.load_state_dict(torch.load('./mn_value4.pth', map_location=torch.device('cpu')))
         self.tree = GameTree(board_fen)
 
         # retain the board
@@ -40,14 +41,14 @@ class MonteCarloAgent():
         self.tree.root.gen_nodes(self.tree.nodes)
         self.tree.root = self.tree.root.dest
  
-    def select_move(self, num_searches=100):
+    def select_move(self, num_searches=300):
         policy = []
 
         for _ in range(num_searches):
             self.tree_search()
 
         board = chess.Board(self.tree.root.board)
-        temp = 1e-5 if board.fullmove_number > 30 else 1.0
+        temp = 1e-5 if board.fullmove_number > 30 else 1e-1
         N_s_b_t = 0.0
         for k in self.tree.root.out_edges.keys():
             N_s_b_t += pow(self.tree.root.out_edges[k].N, 1/temp)
@@ -55,13 +56,18 @@ class MonteCarloAgent():
         key = None
         max_prob = 0.0
         for k in self.tree.root.out_edges.keys():
-            prob = pow(self.tree.root.out_edges[k].N, temp) / N_s_b_t
+            prob = pow(self.tree.root.out_edges[k].N, 1/temp) / N_s_b_t
+            assert self.tree.root.out_edges[k].action == k.a
             policy.append(((self.tree.root.out_edges[k].state, self.tree.root.out_edges[k].action), prob))
+            
+            '''
             if prob >= max_prob:
                 max_prob = prob
                 key = k
-
-        print('Agent chooses {}'.format(key))
+            '''
+        idx = np.random.choice(len(policy), p=[x[1] for x in policy])
+        key = Edge(s=policy[idx][0][0], a=policy[idx][0][1])
+        # print('Agent chooses {}'.format(key))
 
         Q = self.tree.root.out_edges[key].Q
 
@@ -126,6 +132,7 @@ class MonteCarloAgent():
                 # pdb.set_trace()
  
                 # compute candidate a_t as PUCT + Q
+                # print(puct(self.c, probs[i], N_s_b, cur_node.out_edges[edge_key]).item(), cur_node.out_edges[edge_key].Q)
                 a_t_i = puct(self.c, probs[i], N_s_b, cur_node.out_edges[edge_key]) + torch.tensor(cur_node.out_edges[edge_key].Q) # torch.tensor
 
                 # set new maximum if clear winner

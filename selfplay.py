@@ -45,38 +45,27 @@ def main():
 
     for i in range(NUM_GAMES):
         fen = chess.STARTING_FEN
-        # agent.reset_board_and_tree(fen)
+        # TODO: agent.reset_board_and_tree(fen)
         board = chess.Board(fen)
         while not board.is_game_over():
-            print('\n')
-            if board.turn:
-                print('White\'s Turn')
-            else:
-                print('Black\'s Turn')
-            print('\n')
-            
             # display board
             print(board)
-            print('\n')
+            cur_val, pol = move_probs(board.fen())
+            print("White's" if board.turn else "Black's",'Turn. VALUE:', cur_val.item(), flush=True)
+
+            aimove, val, improved_policy = agent.select_move(20)
 
             if board.turn:
-               
-                aimove, val, improved_policy = agent.select_move(10)
-                print('\nWHITE CHOOSES', aimove)
-
-                assert board.fen() == aimove.s
-                board.push(chess.Move.from_uci(aimove.a))
-
-                training_examples.append(TrainingExample(improved_policy, val, aimove.s))
+                print('WHITE CHOOSES', aimove.a, '\n')
             else:
-                aimove, val, improved_policy = agent.select_move(10)
-                print('\nBLACK CHOOSES', aimove)
+                print('BLACK CHOOSES', aimove.a, '\n')
+            
+            assert board.fen() == aimove.s
+            board.push(chess.Move.from_uci(aimove.a))
 
-                assert board.fen() == aimove.s
-                board.push(chess.Move.from_uci(aimove.a))
-
-                training_examples.append(TrainingExample(improved_policy, val, aimove.s))
-
+            training_examples.append(TrainingExample(improved_policy, val, aimove.s))
+            # if len(training_examples) > 2:
+                # break
         print(f'Game over. {"Black" if board.turn else "White"} wins.')
         
         '''
@@ -89,27 +78,28 @@ def main():
         idxs = np.random.choice(L, batch_size, replace=False)
         batch_sample = [training_examples[i] for i in idxs]
 
+        torch.set_grad_enabled(True)
+        agent.policy_net.train()
         for example in batch_sample:
             policy = example.policy
-            val = torch.tensor([example.value], requires_grad=True)
+            refined_val = torch.tensor([example.value], requires_grad=True)
             state = example.board_fen
 
             net_val, logits = move_probs(state)
             probs, moves = mask_invalid(chess.Board(state), logits)
-            # net_val.requires_grad=True
-            # probs.requires_grad = True
+            policy_move_names = [x[0][1] for x in policy]
 
             assert len(policy) == len(probs)
-            refined_probs = torch.tensor([x[1] for x in policy], requires_grad=True)
-            print(refined_probs, probs)
-            print('\n')
-            print(net_val, val)
-            '''
-            loss = floss(net_val, val.detach()) + dkl(probs, refined_probs.detach()) # + nn.CrossEntropyLoss(probs, refined_probs)
+            net_probs = torch.tensor([x for _,x in sorted(zip(moves,probs))], requires_grad=True)
+            refined_probs = torch.tensor([x for _,x in sorted(zip(policy_move_names,[x[1] for x in policy]))], requires_grad=True)
+
+            loss = floss(net_val, refined_val.detach()) + dkl(net_probs, refined_probs.detach()) # + nn.CrossEntropyLoss(probs, refined_probs)
             print(loss)
             loss.backward()
             optimizer.step()
-            '''
+
+        torch.save(agent.policy_net.state_dict(), "mn_value_realtime.pth")
+            
 
 
 

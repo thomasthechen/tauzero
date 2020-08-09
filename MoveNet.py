@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import Conv2d, ReLU, LeakyReLU, Linear, Dropout, BatchNorm2d, LayerNorm 
 from GameTree import *
+import pdb
 
 TOTAL_PIECES = 12
 BOARD_SIZE = 8 ** 2
@@ -44,10 +45,10 @@ def mask_invalid(board, logits, device='cpu'):
 
     move_mask = ~move_mask
     logits[move_mask] = -1 * 10 ** 10 
-
-    logits =  torch.softmax(logits.view(-1), dim=0).view(BOARD_SIZE, BOARD_SIZE)
-
-    probs, coords = torch.topk(logits.reshape(-1), k=k)
+    # pdb.set_trace()
+    logits =  torch.softmax(logits.view(-1), dim=0)
+    
+    probs, coords = torch.topk(logits, k=k)
 
     # print(coords)
 

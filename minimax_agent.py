@@ -3,7 +3,7 @@ import chess
 import random
 from value_approximator import Net
 import torch
-from state import State
+from utils import State
 import time
 
 class MiniMaxAgent:

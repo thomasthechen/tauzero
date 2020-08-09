@@ -24,7 +24,7 @@ class GraphEdge():
         self.N = 0
         self.W = 0
         self.Q = 0
-        self.P = 0
+        self.P = 0.1
         self.state = board_fen
         self.action = action
         self.dest = None
