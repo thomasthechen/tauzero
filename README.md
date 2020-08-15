@@ -38,7 +38,7 @@ Chess GUI credits: https://github.com/geohot/twitchchess
 
 Heroku + Flask + Postgres tutorial: https://medium.com/@dushan14/create-a-web-application-with-python-flask-postgresql-and-deploy-on-heroku-243d548335cc
 
-## Project Contributers
+## Project Contributors
 
 Thomas Chen `@thomasthechen`
 Collin Wang `@collinwa`
