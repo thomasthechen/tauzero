@@ -11,7 +11,7 @@ To run web app locally (where you can play chess against the agent on an actual 
 
 To just view the monte carlo agent play against itself, you can just run python selfplay.py
 
-You can also play against the Minimax agent with an actual GUI at `playtauzero.herokuapp.com`. Note the version deployed on heroku is simpler with less search power, though.
+You can also play against the Minimax agent with an actual GUI at <span style="background-color: #FFFF00">playtauzero.herokuapp.com</span>. Note the version deployed on heroku is simpler with less search power, though.
 
 ## Other components of the project:
 
@@ -38,4 +38,9 @@ Chess GUI credits: https://github.com/geohot/twitchchess
 
 Heroku + Flask + Postgres tutorial: https://medium.com/@dushan14/create-a-web-application-with-python-flask-postgresql-and-deploy-on-heroku-243d548335cc
 
+## Project Contributers
+
+Thomas Chen `thomasthechen`
+Collin Wang `collinwa`
+Andrew Chen `archen2019`
 
