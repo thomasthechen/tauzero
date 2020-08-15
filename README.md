@@ -1,6 +1,8 @@
 # Python Chess AI
 Two models implemented:
+
 (1) Minimax Agent w/ board-value neural network (basic)
+
 (2) Monte Carlo Tree Search w/ move network (in style of AlphaZero)
 
 How to play:
@@ -9,22 +11,31 @@ To run web app locally (where you can play chess against the agent on an actual 
 
 To just view the monte carlo agent play against itself, you can just run python selfplay.py
 
-You can also play against the Minimax agent with an actual GUI at <mark>playtauzero.herokuapp.com</mark>. Note the version deployed on heroku is simpler with less search power, though.
+You can also play against the Minimax agent with an actual GUI at `playtauzero.herokuapp.com`. Note the version deployed on heroku is simpler with less search power, though.
 
+Other components of the project:
 
+Colab notebook for training models: https://colab.research.google.com/drive/1pbMSAsHiy0PuZ7Oak-lhZenrRcS6oIgV#scrollTo=jpLujOJVF8Lz
 
+Trained Models: https://drive.google.com/drive/folders/1n0ioGu-UHqMpdZIfmvMLmX-WL3_kTinz
 
 A few resources used in this project:
 
 Articles and Papers:
+
 Basic Minimax: https://www.freecodecamp.org/news/simple-chess-ai-step-by-step-1d55a9266977/
+
 Basics of Monte Carlo: http://matthewdeakos.me/2018/03/10/monte-carlo-tree-search/?fbclid=IwAR3qmj9--m3s_0iVHateEMdjJBSbG9o4tHmontUL1hoXgt0sSodyRbFoa1U
+
 AlphaGo Zero Paper: https://www.researchgate.net/publication/320473480_Mastering_the_game_of_Go_without_human_knowledge
 
 
 Coding resources:
+
 Python chess library: https://python-chess.readthedocs.io/en/latest/index.html
+
 Chess GUI credits: https://github.com/geohot/twitchchess
+
 Heroku + Flask + Postgres tutorial: https://medium.com/@dushan14/create-a-web-application-with-python-flask-postgresql-and-deploy-on-heroku-243d548335cc
 
 
