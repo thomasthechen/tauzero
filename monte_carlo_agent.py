@@ -17,7 +17,7 @@ def puct(c, p, N_s_b, edge):
     return c * p * np.sqrt(N_s_b) * 1 / (1 + edge.N)
 
 class MonteCarloAgent():
-    def __init__(self, board_fen=chess.STARTING_FEN, c=0.4, **kwargs): 
+    def __init__(self, board_fen=chess.STARTING_FEN, c=0.05, **kwargs): 
         '''
         We take the current game state which is parameterized by its FEN string. 
         self.cur_node = the StateNode that houses the root of the game tree which we wish to explore
@@ -25,12 +25,19 @@ class MonteCarloAgent():
         self.c = float, a hyperparameter controlling the degree of exploration in the UCB1 bandit formula
         '''
         self.policy_net = MoveNet(**kwargs)
-        self.policy_net.load_state_dict(torch.load('./mn_value4.pth', map_location=torch.device('cpu')))
+        self.policy_net.load_state_dict(torch.load('./trained_models/mc_net.pth', map_location=torch.device('cpu')))
         self.tree = GameTree(board_fen)
 
         # retain the board
         self.c = c
         self.tau = 1.0
+
+    def reset_board(self):
+        fen = chess.STARTING_FEN
+        if fen in self.tree.nodes:
+            self.tree.root = self.tree.nodes[fen]
+        else:
+            self.tree.root = GraphNode(fen)
 
     def push_move(self, move):
         move = str(move)
@@ -54,17 +61,11 @@ class MonteCarloAgent():
             N_s_b_t += pow(self.tree.root.out_edges[k].N, 1/temp)
 
         key = None
-        max_prob = 0.0
         for k in self.tree.root.out_edges.keys():
             prob = pow(self.tree.root.out_edges[k].N, 1/temp) / N_s_b_t
             assert self.tree.root.out_edges[k].action == k.a
             policy.append(((self.tree.root.out_edges[k].state, self.tree.root.out_edges[k].action), prob))
             
-            '''
-            if prob >= max_prob:
-                max_prob = prob
-                key = k
-            '''
         idx = np.random.choice(len(policy), p=[x[1] for x in policy])
         key = Edge(s=policy[idx][0][0], a=policy[idx][0][1])
         # print('Agent chooses {}'.format(key))
@@ -178,8 +179,6 @@ class MonteCarloAgent():
                 cur_node.out_edges[edge_key].P = probs[i]
 
         # backup phase
-        ## TODO HAVE TO ACCOUNT FOR TURN OF VAL RETURNED AND CURR BOARD 
-
         end_turn = chess.Board(cur_node.board).turn
         # if checkmated and these two are opposites, then the start state is a winning state, else losing
 
@@ -191,7 +190,7 @@ class MonteCarloAgent():
                 start_turn = chess.Board(cur_node.state).turn
                 value = val.item() * (2 * (start_turn == end_turn) - 1)
         
-                cur_node.W += value
+                cur_node.W += 10 * value
                 cur_node.N += 1.0
                 cur_node.Q = cur_node.W / cur_node.N
 

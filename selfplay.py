@@ -30,9 +30,8 @@ class TrainingExample(object):
     
 
 def main():
-    NUM_GAMES = 1
-    # append with TrainingExamples
-    # TODO setup training framework
+    NUM_GAMES = 2
+    NUM_SEARCHES = 100
 
     agent = MonteCarloAgent(board_fen=chess.STARTING_FEN)
     move_probs = lambda f, n=agent.policy_net, b=bitboard: n(b(f).float())
@@ -45,16 +44,19 @@ def main():
 
     for i in range(NUM_GAMES):
         fen = chess.STARTING_FEN
-        # TODO: agent.reset_board_and_tree(fen)
         board = chess.Board(fen)
+        if i != 0:
+            agent.reset_board()
+        num_moves = 0
         while not board.is_game_over():
             # display board
             print(board)
             cur_val, pol = move_probs(board.fen())
+            # agent.policy_net.eval()
             print("White's" if board.turn else "Black's",'Turn. VALUE:', cur_val.item(), flush=True)
 
-            aimove, val, improved_policy = agent.select_move(20)
-
+            aimove, val, improved_policy = agent.select_move(NUM_SEARCHES)
+    
             if board.turn:
                 print('WHITE CHOOSES', aimove.a, '\n')
             else:
@@ -62,15 +64,13 @@ def main():
             
             assert board.fen() == aimove.s
             board.push(chess.Move.from_uci(aimove.a))
-
+            num_moves += 1
             training_examples.append(TrainingExample(improved_policy, val, aimove.s))
-            # if len(training_examples) > 2:
+            
+            # if num_moves > 2:
                 # break
         print(f'Game over. {"Black" if board.turn else "White"} wins.')
         
-        '''
-        TODO: implement training framework HERE using training_examples; train on value and on improved policy over legal moves
-        '''
         # pick random batch, use to train
         batch_size = 2
         L = len(training_examples)
@@ -98,14 +98,8 @@ def main():
             loss.backward()
             optimizer.step()
 
-        torch.save(agent.policy_net.state_dict(), "mn_value_realtime.pth")
+        torch.save(agent.policy_net.state_dict(), "./trained_models/mc_net_realtime.pth")
             
-
-
-
-
-
-
 
 # run the main function
 if __name__ == '__main__':

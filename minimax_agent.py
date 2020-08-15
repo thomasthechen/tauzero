@@ -24,7 +24,7 @@ class MiniMaxAgent:
         self.maxDepth = 4 # note depth has to be an even number
         self.maxBreadth = 100
         self.value_approx = Net()
-        self.value_approx.load_state_dict(torch.load('./trained_models/value_40_6000_4.pth', map_location=torch.device('cpu')))
+        self.value_approx.load_state_dict(torch.load('./trained_models/minimax_net.pth', map_location=torch.device('cpu')))
         self.value_approx.eval()
         self.maxTime = 10
     
@@ -68,7 +68,7 @@ class MiniMaxAgent:
 
         return beta 
     # BUG : evaluates position when it's maximizer's turn; therefore thinks queen takes knight is good even when queen can be retaken because of the heavy material weighting --> to correct, this func should run a depth 2 search.
-    def get_best_move_candidates(self, board, minimizer, num_ret=10):
+    def get_best_move_candidates(self, board, minimizer, num_ret=20):
         evals = []
         for move in board.legal_moves:
             board.push(move)

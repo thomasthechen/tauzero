@@ -28,7 +28,7 @@ import numpy as np
 from minimax_agent import MiniMaxAgent
 from value_approximator import Net
 # from monte_carlo_agent import MonteCarloAgent
-from state import State
+from utils import State
 
 from rq import Queue
 from worker import conn
@@ -56,7 +56,7 @@ def main():
 
     if args.agent == 'minimax':
         value_approx = Net()
-        value_approx.load_state_dict(torch.load('./trained_models/value.pth', map_location=torch.device('cpu')))
+        value_approx.load_state_dict(torch.load('./trained_models/minimax_net.pth', map_location=torch.device('cpu')))
         value_approx.eval()
         
         # Print model's state_dict
