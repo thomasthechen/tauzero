@@ -38,6 +38,8 @@ class MonteCarloAgent():
             self.tree.root = self.tree.nodes[fen]
         else:
             self.tree.root = GraphNode(fen)
+        print(self.tree.root.board)
+        
 
     def push_move(self, move):
         move = str(move)
@@ -68,7 +70,7 @@ class MonteCarloAgent():
             
         idx = np.random.choice(len(policy), p=[x[1] for x in policy])
         key = Edge(s=policy[idx][0][0], a=policy[idx][0][1])
-        # print('Agent chooses {}'.format(key))
+        print('Monte Carlo Agent chooses {}'.format(key))
 
         Q = self.tree.root.out_edges[key].Q
 

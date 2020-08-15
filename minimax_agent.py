@@ -21,12 +21,12 @@ class MiniMaxAgent:
         beta: the minimum upper bound (the lowest score guaranteed to the minimizing player)
         maxDepth: maximum search depth
         '''
-        self.maxDepth = 4 # note depth has to be an even number
+        self.maxDepth = 6 # note depth has to be an even number
         self.maxBreadth = 100
         self.value_approx = Net()
         self.value_approx.load_state_dict(torch.load('./trained_models/minimax_net.pth', map_location=torch.device('cpu')))
         self.value_approx.eval()
-        self.maxTime = 10
+        self.maxTime = 15
     
 
 
@@ -135,7 +135,7 @@ class MiniMaxAgent:
 
         move_evaluations = []
         likely_moves = self.get_best_move_candidates(board, True)
-        print('LIKELY\n', likely_moves, '\n')
+        # print('LIKELY\n', likely_moves, '\n')
 
         for move in likely_moves:
             board.push(move[0])
@@ -143,8 +143,8 @@ class MiniMaxAgent:
             move_evaluations.append((move[0], evaluation))
             board.pop()
         move_evaluations.sort(key = lambda x: x[1]) 
-        print('EVALS\n', move_evaluations, '\n')
-
+        # print('EVALS\n', move_evaluations, '\n')
+        print('Minimax Agent chooses {}'.format(move_evaluations[0][0]))
         return move_evaluations[0:1]
 
 

@@ -28,7 +28,6 @@ class TrainingExample(object):
         self.policy = policy 
         self.value = value
     
-
 def main():
     NUM_GAMES = 2
     NUM_SEARCHES = 100

@@ -1,20 +1,3 @@
-'''
-This is a file used to test the python-chess library and its functionality. 
-
-Abbreviations:
-SAN - standard algebraic notation (Nf3)
-UCI - universal chess interface (g1f3)
-FEN - Forsyth-Edwards notation (for board state)
-
-board.turn returns True for white and False for black
-
-By default, moves are notated with UCI. 
-'''
-
-'''
-pruning by heuristic is way faster but leads to dumb king moves; pruning by actual eval is hella slow
-'''
-
 import chess
 import random
 import torch 
@@ -27,12 +10,13 @@ import numpy as np
 
 from minimax_agent import MiniMaxAgent
 from value_approximator import Net
-# from monte_carlo_agent import MonteCarloAgent
+from monte_carlo_agent import MonteCarloAgent
+from MoveNet import mask_invalid
+from utils import bitboard
 from utils import State
 
 from rq import Queue
 from worker import conn
-
 from flask_sqlalchemy import SQLAlchemy
 
 q = Queue(connection=conn)
@@ -119,18 +103,24 @@ def main():
 
 
 # @author George Hotz
-
 def to_svg(s):
   return base64.b64encode(chess.svg.board(board=s.board).encode('utf-8')).decode('utf-8')
 
 from flask import Flask, Response, request
 app = Flask(__name__)
 
-
 app.config.from_object(os.environ['APP_SETTINGS'])
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+ai = MiniMaxAgent()
+ai_mc = MonteCarloAgent()
+use_mc = 1
+MC_INIT_ITER = 40
+MC_SEARCH_ITER = 150
+if use_mc:
+    for _ in range(MC_INIT_ITER):
+        ai_mc.tree_search()
 
 class Entry(db.Model):
     __tablename__ = 'boards'
@@ -149,8 +139,6 @@ class Entry(db.Model):
             'id': self.id, 
             'board': self.board,
         }
-ai = MiniMaxAgent()
-# s = State()
 
 @app.route("/")
 def hello():
@@ -165,13 +153,18 @@ def computer_move():
     fen = Entry.query.first().board
     s = State()
     s.board = chess.Board(fen)
-
-    possible_moves = ai.minimax(s.board)
-    probs = [x[1] for x in possible_moves]
-    moves = [x[0] for x in possible_moves] 
-    probs = probs/np.sum(probs)
-    aimove = np.random.choice(moves, p=probs)
-    s.board.push(aimove)
+    if not use_mc:
+        # MINIMAX
+        possible_moves = ai.minimax(s.board)
+        probs = [x[1] for x in possible_moves]
+        moves = [x[0] for x in possible_moves] 
+        probs = probs/np.sum(probs)
+        aimove = np.random.choice(moves, p=probs)
+        s.board.push(aimove)
+    else:
+        # MONTE: monte carlo agent
+        aimove_mc, val, improved_policy = ai_mc.select_move(MC_SEARCH_ITER)
+        s.board.push(chess.Move.from_uci(aimove_mc.a))
 
     bk = Entry.query.update(dict(board=s.board.fen()))
     db.session.commit()
@@ -221,15 +214,20 @@ def move_coordinates():
         promotion = True if request.args.get('promotion', default='') == 'true' else False
 
         move = s.board.san(chess.Move(source, target, promotion=chess.QUEEN if promotion else None))
-        # print(s.board)
+        # MONTE: 
+        move_uci = chess.Move(source, target, promotion=chess.QUEEN if promotion else None)
+
         if move is not None and move != "":
             print("human moves", move)
             try:
                 s.board.push_san(move)
                 bk = Entry.query.update(dict(board=s.board.fen()))
                 db.session.commit()
+                if use_mc:
+                    # MONTE: Note monte won't work on heroku bc it stores state;
+                    ai_mc.push_move(move_uci)
+                
                 computer_move()
-                # computer_move()
             except Exception:
                 traceback.print_exc()
         fen = Entry.query.first().board
@@ -257,6 +255,10 @@ def newgame():
     # entry = Entry(s.board.fen())
     # db.session.add(entry)
     # db.session.commit()
+
+    if use_mc:
+        ai_mc.reset_board()
+        print('RESET MC BOARD')
 
     response = app.response_class(
         response=fen,
